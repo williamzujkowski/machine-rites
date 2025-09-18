@@ -1,0 +1,29 @@
+# ShellCheck configuration for machine-rites
+# Place this in the repo root as .shellcheckrc
+
+# Set minimum severity (error, warning, info, style)
+severity=warning
+
+# Shell dialect
+shell=bash
+
+# Disable specific checks globally
+# SC1090: Can't follow non-constant source
+# SC1091: Not following sourced files  
+# SC2155: Declare and assign separately to avoid masking return values
+disable=SC1090,SC1091,SC2155
+
+# Enable optional checks
+# require-variable-braces: Require ${} for all variables
+# quote-safe-variables: Suggest quoting variables without metacharacters
+# require-double-brackets: Suggest [[ ]] instead of [ ]
+enable=require-variable-braces,quote-safe-variables,require-double-brackets
+
+# External sources (for better analysis)
+source-path=~/.bashrc.d
+source-path=~/.config/chezmoi
+source-path=.
+
+# Exclude paths
+exclude=backups/
+exclude=.git/

@@ -1,0 +1,74 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Editor files
+*.swp
+*.swo
+*.swn
+*~
+.vscode/
+.idea/
+*.sublime-*
+.vim/
+.netrwhist
+
+# Security - never commit these
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+secrets.env
+.env
+.env.*
+credentials*
+.password-store/
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+*.tmp
+*.XXXXXX
+dotfiles-backup-*/
+
+# Pass backup encryption keys
+backups/
+
+# Local overrides
+.bashrc.d/99-local.sh
+*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+pip-log.txt
+
+# SSH agent state
+.local/state/ssh/
+
+# Logs
+*.log
+logs/
+*.pid
+
+# Temporary files
+tmp/
+temp/
+.cache/
+
+# Chezmoi
+.chezmoi.toml.tmpl
