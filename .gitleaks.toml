@@ -1,0 +1,13 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "custom-api-key"
+description = "Custom API Key Pattern"
+regex = '''(?i)(api[_-]?key|apikey)['""]?\s*[:=]\s*['""]?([a-z0-9]{32,})'''
+
+[allowlist]
+paths = [
+  '''vendor/''',
+  '''node_modules/'''
+]

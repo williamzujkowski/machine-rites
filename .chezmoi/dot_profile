@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# ~/.profile
+# shellcheck shell=sh
+[ -n "$BASH_VERSION" ] && [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+
+# Set PATH
+for p in "$HOME/bin" "$HOME/.local/bin"; do
+  case ":$PATH:" in *":$p:"*) ;; *) [ -d "$p" ] && PATH="$p:$PATH";; esac
+done
+export PATH

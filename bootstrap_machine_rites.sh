@@ -10,20 +10,28 @@ info(){ printf "${C_B}[i] %s${C_N}\n" "$*"; }
 warn(){ printf "${C_Y}[!] %s${C_N}\n" "$*"; }
 die(){ printf "${C_R}[✘] %s${C_N}\n" "$*" >&2; exit 1; }
 
+# Require sudo if not root (for apt installs)
+if [ "$(id -u)" -ne 0 ] && ! command -v sudo >/dev/null 2>&1; then
+  die "This script needs 'sudo' for package installs. Install sudo or run as root."
+fi
+
 # ----- parse flags -----
 UNATTENDED=0
 VERBOSE=0
 SKIP_BACKUP=0
+DEBUG=0
 for arg in "$@"; do
   case "$arg" in
     --unattended|-u) UNATTENDED=1 ;;
     --verbose|-v) VERBOSE=1 ;;
     --skip-backup) SKIP_BACKUP=1 ;;
+    --debug) DEBUG=1 ;;
     --help|-h)
       echo "Usage: $0 [OPTIONS]"
       echo "  -u, --unattended  Run without prompts"
       echo "  -v, --verbose     Enable debug output"
       echo "  --skip-backup     Skip backup step (dangerous)"
+      echo "  --debug           Extra diagnostics (xtrace + preflight)"
       echo "  -h, --help        Show this help"
       exit 0
       ;;
@@ -31,6 +39,53 @@ for arg in "$@"; do
   esac
 done
 [ "$VERBOSE" -eq 1 ] && set -x
+if [ "$DEBUG" -eq 1 ]; then
+  export PS4='+(${BASH_SOURCE##*/}:${LINENO}): ${FUNCNAME[0]:-main}(): '
+  set -x
+fi
+trap 'echo "[ERR] rc=$? at ${BASH_SOURCE[0]}:${LINENO} running: ${BASH_COMMAND}" >&2' ERR
+
+# ----- tiny debug helpers -----
+debug_var(){ local n="$1" v="${!1:-<unset>}"; printf "[debug] %s=%s (%%q:%q)\n" "$n" "$v" "$v"; }
+preflight_scan(){
+  echo "[debug] Preflight scan…"
+  local self cfg
+  self="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+  cfg="${CHEZMOI_CFG:-$HOME/.config/chezmoi/chezmoi.toml}"
+
+  # 1) suspicious escapes in THIS script (these must not exist)
+  if grep -nE '\\\$HOME|\\\$CHEZMOI(_|SRC)|\\\[' "$self" 2>/dev/null; then
+    echo "[warn] Script contains escaped variables/brackets above — fix before running."
+  else
+    echo "[debug] No escaped \$HOME/\$CHEZMOI_* or bracket escapes in script."
+  fi
+
+  # 2) single-quoted variables (won't expand)
+  if grep -nE "'.*\$[A-Za-z_][A-Za-z0-9_]*.*'" "$self" 2>/dev/null; then
+    echo "[warn] Variables found inside single quotes in script (won't expand)."
+  else
+    echo "[debug] No single-quoted variables in script."
+  fi
+
+  # 3) chezmoi config echo
+  if [ -f "$cfg" ]; then
+    echo "[debug] Found $cfg"
+    grep -nE '\$CHEZMOI|\\_' "$cfg" && echo "[warn] Config contains escaped vars" || true
+  else
+    echo "[debug] No chezmoi.toml yet (will be created)."
+  fi
+
+  if command -v chezmoi >/dev/null 2>&1; then
+    echo "[debug] chezmoi sourceDir (template): $(chezmoi execute-template '{{ .chezmoi.sourceDir }}' 2>/dev/null || echo '<unknown>')"
+    chezmoi doctor || true
+  fi
+}
+[ "$DEBUG" -eq 1 ] && preflight_scan
+
+# Self-lint this script if shellcheck exists (does not fail the run)
+if command -v shellcheck >/dev/null 2>&1; then
+  shellcheck -x -S warning "$0" || warn "ShellCheck found issues in $0"
+fi
 
 # ----- version checking helper -----
 need_version() {
@@ -45,8 +100,7 @@ need_version() {
 if ! lsb_release -is 2>/dev/null | grep -q Ubuntu; then
   warn "This script is designed for Ubuntu. Detected: $(lsb_release -is 2>/dev/null || echo 'Unknown')"
   if [ "$UNATTENDED" -eq 0 ]; then
-    read -rp "Continue anyway? [y/N] " -n 1 -r
-    echo
+    read -rp "Continue anyway? [y/N] " -n 1 -r; echo
     [[ ! $REPLY =~ ^[Yy]$ ]] && die "Aborted by user"
   fi
 fi
@@ -66,18 +120,17 @@ PASS_PREFIX="${PASS_PREFIX:-personal}"
 
 # ----- atomic write helper -----
 write_atomic() {
-  local target="$1"
-  local tmp
+  local target="$1" tmp
   tmp="$(mktemp "${target}.XXXXXX")"
   cat > "$tmp"
   mkdir -p "$(dirname "$target")"
   mv -f "$tmp" "$target"
+  chmod 0644 "$target" 2>/dev/null || true
 }
 
 # ----- detect git user info dynamically -----
 GIT_NAME="${GIT_NAME:-$(git config --global user.name 2>/dev/null || true)}"
 GIT_EMAIL="${GIT_EMAIL:-$(git config --global user.email 2>/dev/null || true)}"
-
 if [ -z "${GIT_EMAIL}" ] && [ -t 0 ] && [ "${UNATTENDED}" -eq 0 ]; then
   read -rp "Git email not set. Enter email for chezmoi data: " GIT_EMAIL
 fi
@@ -91,10 +144,12 @@ backup_dir="$HOME/dotfiles-backup-$ts"
 if [ "$SKIP_BACKUP" -eq 0 ]; then
   mkdir -p "$backup_dir"
   say "Creating backup: $backup_dir"
-  
+  # Cleanup policy: keep only the latest 5 backups
+  ls -dt "$HOME"/dotfiles-backup-* 2>/dev/null | tail -n +6 | xargs -r rm -rf || true
+
   # Save manifest for rollback
   echo "# Backup manifest - $ts" > "$backup_dir/.manifest"
-  
+
   for f in "$HOME/.bashrc" "$HOME/.profile" "$HOME/.bashrc.d" \
            "$XDG_CONFIG_HOME/secrets.env" "$HOME/.gitignore_global" \
            "$CHEZMOI_CFG" "$HOME/.ssh/config"; do
@@ -104,21 +159,29 @@ if [ "$SKIP_BACKUP" -eq 0 ]; then
       [ "$VERBOSE" -eq 1 ] && info "  backed up: $f"
     fi
   done
-  
+
   # Create rollback script
   cat > "$backup_dir/rollback.sh" <<'ROLLBACK'
 #!/usr/bin/env bash
 set -euo pipefail
 BACKUP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-echo "[rollback] Restoring backed-up dotfiles from $BACKUP_DIR..."
-for f in .bashrc .profile .bashrc.d .gitignore_global .config/chezmoi/chezmoi.toml; do
-  if [ -e "$BACKUP_DIR/$f" ]; then
-    target="$HOME/$f"
-    mkdir -p "$(dirname "$target")"
-    cp -a "$BACKUP_DIR/$f" "$target"
-    echo "  restored: $target"
+MANIFEST="$BACKUP_DIR/.manifest"
+echo "[rollback] Restoring from $BACKUP_DIR"
+if [ ! -f "$MANIFEST" ]; then
+  echo "[rollback] No manifest found"; exit 1
+fi
+while IFS= read -r path; do
+  [ -z "$path" ] && continue
+  case "$path" in \#*) continue;; esac
+  rel="${path#"$HOME/"}"
+  src="$BACKUP_DIR/$rel"
+  dst="$path"
+  if [ -e "$src" ]; then
+    mkdir -p "$(dirname "$dst")"
+    cp -a "$src" "$dst"
+    echo "  restored: $dst"
   fi
-done
+done < "$MANIFEST"
 echo "[rollback] Done. Run 'exec bash -l' to reload shell."
 ROLLBACK
   chmod +x "$backup_dir/rollback.sh"
@@ -127,22 +190,58 @@ fi
 
 # ----- install packages -----
 say "Installing system packages..."
-packages="curl git gnupg pass age chezmoi gitleaks bash-completion pipx openssh-client"
-if ! dpkg -l $packages >/dev/null 2>&1; then
-  sudo apt-get update -y
-  # shellcheck disable=SC2086
-  sudo apt-get install -y $packages
+export DEBIAN_FRONTEND=noninteractive
+# Leave chezmoi to the official installer fallback below (Ubuntu 24.04 lacks package)
+packages=(curl git gnupg pass age gitleaks bash-completion pipx openssh-client)
+missing=()
+for p in "${packages[@]}"; do
+  dpkg -s "$p" >/dev/null 2>&1 || missing+=("$p")
+done
+if [ "${#missing[@]}" -gt 0 ]; then
+  say "Installing: ${missing[*]}"
+  if [ "$(id -u)" -eq 0 ]; then
+    apt-get update -y
+    apt-get install -y "${missing[@]}" || true
+  else
+    sudo -n true 2>/dev/null || warn "sudo may prompt for password"
+    sudo apt-get update -y
+    sudo apt-get install -y "${missing[@]}" || true
+  fi
+else
+  info "All packages already present"
 fi
 
-# pipx setup
-if ! command -v pipx >/dev/null 2>&1; then
-  eval "$(/usr/bin/pipx ensurepath)" || true
-  export PATH="$HOME/.local/bin:$PATH"
+# ----- ensure chezmoi via official installer if not present -----
+if ! command -v chezmoi >/dev/null 2>&1; then
+  say "Installing chezmoi via official installer..."
+  sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin" || die "chezmoi install failed"
+  case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
+  command -v chezmoi >/dev/null 2>&1 || die "chezmoi not found on PATH after install"
+fi
+
+# pipx setup (do NOT eval pipx output)
+if command -v pipx >/dev/null 2>&1; then
+  pipx ensurepath >/dev/null 2>&1 || true
+  case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
+else
+  warn "pipx not found on PATH; ensure it's installed (apt install pipx) and re-run if needed"
 fi
 
 if ! command -v pre-commit >/dev/null 2>&1; then
   say "Installing pre-commit via pipx..."
   pipx install pre-commit >/dev/null || true
+fi
+
+# Optional: install Starship prompt
+if ! command -v starship >/dev/null 2>&1; then
+  if [ "$UNATTENDED" -eq 0 ] && [ -t 0 ]; then
+    read -rp "Install Starship prompt? [y/N] " -n 1 -r; echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      curl -sS https://starship.rs/install.sh | sh -s -- -b "$HOME/.local/bin" -y || warn "Starship install failed"
+    fi
+  else
+    info "Consider installing Starship for a fast, pretty prompt: https://starship.rs"
+  fi
 fi
 
 # Verify critical tools and versions
@@ -153,8 +252,6 @@ for tool in chezmoi pass gitleaks pre-commit git gpg; do
     die "Failed to install $tool"
   fi
 done
-
-# Check minimum versions
 need_version chezmoi 2.0 || warn "chezmoi version is old; consider upgrading"
 need_version git 2.25 || warn "git version is old; consider upgrading"
 
@@ -252,21 +349,7 @@ if ! shopt -oq posix; then
 fi
 EOF
 
-# 20-oh-my-bash.sh
-write_atomic "$HOME/.bashrc.d/20-oh-my-bash.sh" <<'EOF'
-#!/usr/bin/env bash
-# shellcheck shell=bash
-# shellcheck disable=SC1090,SC1091
-if [[ -r "$HOME/.oh-my-bash/oh-my-bash.sh" ]]; then
-  export OSH="$HOME/.oh-my-bash"
-  export OMB_USE_SUDO=true
-  OSH_THEME="font"
-  completions=(git composer ssh nvm vagrant)
-  aliases=(general)
-  plugins=(git bashmarks sudo pyenv nvm vagrant)
-  . "$HOME/.oh-my-bash/oh-my-bash.sh"
-fi
-EOF
+# (Removed Oh-My-Bash to reduce footprint/supply-chain surface)
 
 # 30-secrets.sh
 write_atomic "$HOME/.bashrc.d/30-secrets.sh" <<'EOF'
@@ -279,11 +362,13 @@ pass_env() {
   command -v pass >/dev/null 2>&1 || return 0
   local prefix="${1:-$PASS_PREFIX}" item var val
   while IFS= read -r item; do
+    [[ "$item" == "Search Terms:"* ]] && continue
+    [[ -z "$item" ]] && continue
     val="$(pass show "$item" 2>/dev/null | head -n1)"
     var="${item##*/}"
     var="$(printf '%s' "$var" | tr '[:lower:]-' '[:upper:]_' | sed 's/[^A-Z0-9_]/_/g')"
     [[ -n "$var" && -n "$val" ]] && export "$var=$val"
-  done < <(pass ls "$prefix" 2>/dev/null | sed '1d;s/^[[:space:]]*//' | grep -E "^$prefix/" || true)
+  done < <(pass find "$prefix" 2>/dev/null || true)
 }
 pass_env
 
@@ -293,13 +378,27 @@ if [[ -f "$_plain" ]]; then
   chmod 600 "$_plain" 2>/dev/null || true
   set -a
   while IFS= read -r line; do
+    # skip comments/blank
     [[ "$line" =~ ^[[:space:]]*# ]] && continue
     [[ "$line" =~ ^[[:space:]]*$ ]] && continue
-    if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
-      key="${BASH_REMATCH[1]}"; val="${BASH_REMATCH[2]}"
-      val="${val#[\"']}"; val="${val%[\"']}"
-      export "$key=$val"
+
+    # split on first '=' only
+    key="${line%%=*}"
+    val="${line#*=}"
+
+    # trim whitespace around key/val
+    key="${key#"${key%%[![:space:]]*}"}"; key="${key%"${key##*[![:space:]]}"}"
+    val="${val#"${val%%[![:space:]]*}"}"; val="${val%"${val##*[![:space:]]}"}"
+
+    # strip matching surrounding quotes
+    if [[ "$val" == \"*\" && "$val" == *\" ]]; then
+      val="${val%\"}"; val="${val#\"}"
+    elif [[ "$val" == \'*\' && "$val" == *\' ]]; then
+      val="${val%\'}"; val="${val#\'}"
     fi
+
+    # only export valid shell identifiers
+    [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && export "$key=$val"
   done < "$_plain"
   set +a
 fi
@@ -312,7 +411,6 @@ write_atomic "$HOME/.bashrc.d/35-ssh.sh" <<'EOF'
 # shellcheck shell=bash
 # shellcheck disable=SC1090
 # Reuse one ssh-agent across sessions using XDG state
-set -o nounset -o errexit -o pipefail
 
 XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
 STATE_DIR="$XDG_STATE_HOME/ssh"
@@ -379,7 +477,7 @@ write_atomic "$HOME/.bashrc.d/40-tools.sh" <<'EOF'
 
 # nvm lazy loading
 export NVM_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/nvm"
-nvm() { 
+nvm() {
   unset -f nvm
   [[ -s "$NVM_DIR/nvm.sh" ]] && . "$NVM_DIR/nvm.sh"
   nvm "$@"
@@ -410,6 +508,45 @@ if command -v batcat >/dev/null 2>&1; then
 fi
 EOF
 
+# 41-completions.sh — tool-specific completions without Oh-My-Bash
+write_atomic "$HOME/.bashrc.d/41-completions.sh" <<'EOF'
+#!/usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC1090,SC1091
+
+# Ensure bash-completion is available (already sourced in 10-bash-completion.sh)
+
+# git
+for f in /usr/share/bash-completion/completions/git \
+         /usr/share/doc/git/contrib/completion/git-completion.bash; do
+  [[ -f $f ]] && . "$f" && break
+done
+
+# gh
+if command -v gh >/dev/null 2>&1; then
+  eval "$(gh completion -s bash 2>/dev/null)" || true
+fi
+
+# kubectl
+command -v kubectl >/dev/null 2>&1 && eval "$(kubectl completion bash)" || true
+
+# docker & compose (if distro provides them)
+for f in /usr/share/bash-completion/completions/docker \
+         /usr/share/bash-completion/completions/docker-compose; do
+  [[ -f $f ]] && . "$f"
+done
+
+# terraform
+if command -v terraform >/dev/null 2>&1; then
+  terraform -install-autocomplete >/dev/null 2>&1 || true
+fi
+
+# aws
+if command -v aws_completer >/dev/null 2>&1; then
+  complete -C aws_completer aws
+fi
+EOF
+
 # 50-prompt.sh
 write_atomic "$HOME/.bashrc.d/50-prompt.sh" <<'EOF'
 #!/usr/bin/env bash
@@ -424,13 +561,25 @@ if [[ -f /usr/lib/git-core/git-sh-prompt ]]; then
   export GIT_PS1_SHOWUNTRACKEDFILES=1
   export GIT_PS1_SHOWUPSTREAM="auto"
   export GIT_PS1_SHOWCOLORHINTS=1
-  
+
   # Color prompt with git
   if [[ -x /usr/bin/tput ]] && tput setaf 1 >&/dev/null; then
     PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]$(__git_ps1 " (\[\033[01;31m\]%s\[\033[00m\])")\$ '
   else
     PS1='[\u@\h \W$(__git_ps1 " (%s)")]\$ '
   fi
+fi
+EOF
+
+# 55-starship.sh — fast cross-shell prompt
+write_atomic "$HOME/.bashrc.d/55-starship.sh" <<'EOF'
+#!/usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC1090,SC1091
+# If starship is installed, enable it
+if command -v starship >/dev/null 2>&1; then
+  export STARSHIP_CONFIG="${STARSHIP_CONFIG:-$HOME/.config/starship.toml}"
+  eval "$(starship init bash)"
 fi
 EOF
 
@@ -498,6 +647,8 @@ PROF
 
 # ----- import into chezmoi -----
 say "Importing dotfiles into chezmoi..."
+debug_var REPO_DIR
+debug_var CHEZMOI_SRC
 chezmoi -S "$CHEZMOI_SRC" add "$HOME/.bashrc" "$HOME/.profile" "$HOME/.bashrc.d" 2>/dev/null || true
 
 # .chezmoiignore
@@ -526,22 +677,25 @@ chezmoi diff
 # Update from repo
 git pull && chezmoi apply
 ```
+
 README
 
 # ----- apply chezmoi -----
 say "Applying chezmoi configuration..."
+debug_var CHEZMOI_SRC
 chezmoi -S "$CHEZMOI_SRC" apply || warn "Chezmoi apply failed"
 
 # ----- gitignore -----
+# Global gitignore for sensitive files
 touch "$HOME/.gitignore_global"
 for pattern in ".config/secrets.env" ".bashrc.d/99-local.sh" "*.swp" ".DS_Store" "*.tmp"; do
-  grep -qxF "$pattern" "$HOME/.gitignore_global" || echo "$pattern" >> "$HOME/.gitignore_global"
+  grep -qxF "$pattern" "$HOME/.gitignore_global" 2>/dev/null || echo "$pattern" >> "$HOME/.gitignore_global"
 done
 git config --global core.excludesFile "$HOME/.gitignore_global" 2>/dev/null || true
 
 # ----- GPG / pass setup -----
 ensure_gpg_key() {
-  if gpg --list-secret-keys --with-colons 2>/dev/null | grep -q '^sec:'; then 
+  if gpg --list-secret-keys --with-colons 2>/dev/null | grep -q '^sec:'; then
     return 0
   fi
   
@@ -552,9 +706,7 @@ ensure_gpg_key() {
     echo "  1) Generate a new GPG key now (recommended)"
     echo "  2) Import existing GPG key"
     echo "  3) Skip (pass won't work)"
-    read -rp "Choice [1-3]: " -n 1 -r
-    echo
-    
+    read -rp "Choice [1-3]: " -n 1 -r; echo
     case "$REPLY" in
       1) gpg --full-generate-key ;;
       2) echo "Run: gpg --import /path/to/key.asc" ;;
@@ -580,28 +732,39 @@ if command -v pass >/dev/null 2>&1; then
 fi
 
 # ----- migrate plaintext secrets -----
-if [ -f "$XDG_CONFIG_HOME/secrets.env" ] && command -v pass >/dev/null 2>&1; then
-  if pass ls >/dev/null 2>&1; then
-    say "Migrating secrets to pass..."
-    while IFS= read -r line; do
-      [[ "$line" =~ ^[[:space:]]*# ]] && continue
-      [[ "$line" =~ ^[[:space:]]*$ ]] && continue
-      if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
-        key="${BASH_REMATCH[1]}"
-        val="${BASH_REMATCH[2]}"
-        val="${val#[\"']}"; val="${val%[\"']}"
-        low="$(echo "$key" | tr '[:upper:]' '[:lower:]')"
-        echo "$val" | pass insert -m "${PASS_PREFIX}/${low}" >/dev/null 2>&1 || warn "Failed: $key"
-      fi
-    done < "$XDG_CONFIG_HOME/secrets.env"
+if [ -f "$XDG_CONFIG_HOME/secrets.env" ] && pass ls >/dev/null 2>&1; then
+  say "Migrating secrets to pass..."
+  while IFS= read -r line; do
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ "$line" =~ ^[[:space:]]*$ ]] && continue
     
-    if [ "$UNATTENDED" -eq 0 ] && [ -t 0 ]; then
-      read -rp "Shred plaintext secrets file? [y/N] " -n 1 -r
-      echo
-      [[ $REPLY =~ ^[Yy]$ ]] && shred -u "$XDG_CONFIG_HOME/secrets.env"
-    else
-      info "Plaintext secrets remain at: $XDG_CONFIG_HOME/secrets.env"
+    # split on first '=' only
+    key="${line%%=*}"
+    val="${line#*=}"
+    
+    # trim whitespace around key/val
+    key="${key#"${key%%[![:space:]]*}"}"; key="${key%"${key##*[![:space:]]}"}"
+    val="${val#"${val%%[![:space:]]*}"}"; val="${val%"${val##*[![:space:]]}"}"
+    
+    # strip matching surrounding quotes
+    if [[ "$val" == \"*\" && "$val" == *\" ]]; then
+      val="${val%\"}"; val="${val#\"}"
+    elif [[ "$val" == \'*\' && "$val" == *\' ]]; then
+      val="${val%\'}"; val="${val#\'}"
     fi
+    
+    # only store valid shell identifiers
+    if [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+      low="$(printf '%s' "$key" | tr '[:upper:]' '[:lower:]')"
+      printf '%s\n' "$val" | pass insert -m "${PASS_PREFIX}/${low}" >/dev/null 2>&1 || warn "Failed: $key"
+    fi
+  done < "$XDG_CONFIG_HOME/secrets.env"
+  
+  if [ "$UNATTENDED" -eq 0 ] && [ -t 0 ]; then
+    read -rp "Shred plaintext secrets file? [y/N] " -n 1 -r; echo
+    [[ $REPLY =~ ^[Yy]$ ]] && shred -u "$XDG_CONFIG_HOME/secrets.env"
+  else
+    info "Plaintext secrets remain at: $XDG_CONFIG_HOME/secrets.env"
   fi
 fi
 
@@ -613,15 +776,39 @@ useDefault = true
 [[rules]]
 id = "custom-api-key"
 description = "Custom API Key Pattern"
-regex = '''(?i)(api[_\-]?key|apikey)['"]?\s*[:=]\s*['"]?([a-z0-9]{32,})'''
+regex = '''(?i)(api[_-]?key|apikey)['""]?\s*[:=]\s*['""]?([a-z0-9]{32,})'''
 
 [allowlist]
 paths = [
   '''vendor/''',
-  '''node_modules/''',
-  '''.git/'''
+  '''node_modules/'''
 ]
 TOML
+
+# Optional starship config (created if not present)
+if [ ! -f "$XDG_CONFIG_HOME/starship.toml" ]; then
+  write_atomic "$XDG_CONFIG_HOME/starship.toml" <<'STAR'
+format = "$all"
+add_newline = false
+[character]
+success_symbol = "[➜](bold green) "
+error_symbol = "[✗](bold red) "
+[git_branch]
+truncation_length = 32
+[git_status]
+conflicted = "!"
+diverged = "⇕"
+modified = "~"
+staged = "+"
+untracked = "?"
+stashed = "≡"
+[directory]
+truncation_length = 3
+truncate_to_repo = true
+STAR
+else
+  info "Existing starship.toml found, preserving"
+fi
 
 # ----- pre-commit -----
 write_atomic "$REPO_DIR/.pre-commit-config.yaml" <<'YAML'
@@ -632,14 +819,13 @@ repos:
       - id: gitleaks
         args: ["--no-banner", "--redact", "--staged"]
   
-  - repo: https://github.com/koalaman/shellcheck-precommit
-    rev: v0.10.0
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
     hooks:
       - id: shellcheck
         args: ["--severity=warning"]
 YAML
-
-(cd "$REPO_DIR" && pre-commit install >/dev/null 2>&1) || warn "pre-commit install failed"
+( cd "$REPO_DIR" && pre-commit install >/dev/null 2>&1 ) || warn "pre-commit install failed"
 
 # ----- helper scripts -----
 mkdir -p "$REPO_DIR/tools"
@@ -669,14 +855,18 @@ fi
 # Tools check
 echo -e "\n[Tools]"
 errors=0
-for t in bash chezmoi pass gitleaks pre-commit git gpg age ssh; do
+for t in bash chezmoi pass gitleaks pre-commit git gpg age ssh starship; do
   printf "  %-12s : " "$t"
   if command -v "$t" >/dev/null 2>&1; then
-    ver=$("$t" --version 2>/dev/null | head -1 || echo "installed")
+    ver="$("$t" --version 2>/dev/null | head -1 || echo "installed")"
     ok "${ver:0:50}"
   else
-    fail "MISSING"
-    ((errors++))
+    if [ "$t" = "starship" ]; then
+      warn "Not installed (optional)"
+    else
+      fail "MISSING"
+      ((errors++))
+    fi
   fi
 done
 
@@ -692,7 +882,7 @@ fi
 # Pass
 echo -e "\n[Pass Store]"
 if pass ls >/dev/null 2>&1; then
-  count=$(pass ls 2>/dev/null | grep -c '├──\|└──' || echo "0")
+  count=$(pass ls 2>/dev/null | grep -E -c '├──|└──' || echo "0")
   ok "Entries: $count"
 else
   warn "Not initialized (run: pass init <GPG_KEY_ID>)"
@@ -759,7 +949,7 @@ fi
 
 echo -e "\n=== End Health Check ==="
 DOC
-chmod +x "$REPO_DIR/tools/doctor.sh"
+chmod 0755 "$REPO_DIR/tools/doctor.sh"
 
 # update.sh
 write_atomic "$REPO_DIR/tools/update.sh" <<'UPD'
@@ -798,7 +988,7 @@ echo "Running health check..."
 
 echo "=== Update Complete ==="
 UPD
-chmod +x "$REPO_DIR/tools/update.sh"
+chmod 0755 "$REPO_DIR/tools/update.sh"
 
 # backup-pass.sh
 write_atomic "$REPO_DIR/tools/backup-pass.sh" <<'BKP'
@@ -832,7 +1022,7 @@ fi
 
 echo "Restore: gpg -d $backup_file | tar xzf - -C ~/.password-store"
 BKP
-chmod +x "$REPO_DIR/tools/backup-pass.sh"
+chmod 0755 "$REPO_DIR/tools/backup-pass.sh"
 
 # ----- CI/CD workflow with proper permissions -----
 mkdir -p "$REPO_DIR/.github/workflows"
@@ -880,7 +1070,9 @@ jobs:
         uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files
-
+        env:
+          SKIP: no-commit-to-branch
+  
   gitleaks:
     name: Security scan
     runs-on: ubuntu-latest
@@ -910,15 +1102,20 @@ say "Committing configuration..."
   else
     git commit -m "feat: production-grade dotfiles with all fixes
 
-- Smart SSH agent reuse (no multiplication)
-- Dynamic git email detection
-- XDG Base Directory compliance
-- Atomic file operations
-- Rollback mechanism
-- Version checking
-- ShellCheck pragmas
-- CI with PR permissions
-- Enhanced helper scripts"
+* Smart SSH agent reuse (no multiplication)
+* Dynamic git email detection
+* XDG Base Directory compliance
+* Atomic file operations
+* Rollback mechanism
+* Version checking
+* ShellCheck pragmas
+* CI with PR permissions
+* Enhanced helper scripts
+* Remove Oh-My-Bash; add explicit completions
+* Starship prompt support
+* Safer pipx path logic and apt handling
+* Manifest-driven rollback
+* Hardened gitleaks allowlist"
   fi
 ) || warn "Commit failed"
 
@@ -955,5 +1152,6 @@ echo "  1. Reload: exec bash -l"
 echo "  2. Check: $REPO_DIR/tools/doctor.sh"
 echo "  3. Secrets: pass insert ${PASS_PREFIX}/github_token"
 echo "  4. SSH: ensure_ssh_key"
+echo "  5. Optional: install starship (https://starship.rs) for the prompt"
 echo
 [ "$SKIP_BACKUP" -eq 0 ] && info "Rollback: ${backup_dir}/rollback.sh"

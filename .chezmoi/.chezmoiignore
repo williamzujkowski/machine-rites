@@ -1,0 +1,4 @@
+.bashrc.d/99-local.sh
+README.md
+.git
+.gitignore

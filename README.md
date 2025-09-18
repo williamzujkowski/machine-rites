@@ -9,17 +9,18 @@ Production-grade dotfiles management with intelligent SSH agent handling, atomic
 
 ## ✨ Key Features
 
-- **🔧 Modular bash configuration** - Organized `~/.bashrc.d/` modules with proper shellcheck pragmas
-- **🔒 GPG-encrypted secrets** - Pass integration with automatic migration from plaintext
-- **🔑 Smart SSH agent** - Single agent reused across sessions (no multiplication)
-- **📦 Chezmoi-powered** - Declarative dotfiles with dynamic templating
-- **⚡ Atomic operations** - Safe file writes with automatic rollback on failure
-- **🚫 Secret scanning** - Pre-commit hooks with gitleaks + shellcheck
-- **✅ CI/CD pipeline** - GitHub Actions with proper PR comment permissions
-- **🔄 One-command rollback** - Time-stamped backups with restore scripts
-- **📊 Health monitoring** - Comprehensive doctor script with actionable output
-- **🎯 XDG compliance** - Full Base Directory specification support
-- **🚀 Version checking** - Minimum version requirements for critical tools
+- **🔧 Modular bash configuration** — Organized `~/.bashrc.d/` modules with proper shellcheck pragmas
+- **🔒 GPG-encrypted secrets** — Pass integration with automatic migration from plaintext
+- **🔑 Smart SSH agent** — Single agent reused across sessions (no multiplication)
+- **📦 Chezmoi-powered** — Declarative dotfiles with dynamic templating
+- **⚡ Atomic operations** — Safe file writes with automatic rollback on failure
+- **🚫 Secret scanning** — Pre-commit hooks with gitleaks + shellcheck
+- **✅ CI/CD pipeline** — GitHub Actions with proper PR comment permissions
+- **🔄 One-command rollback** — Time-stamped backups with restore scripts
+- **📊 Health monitoring** — Comprehensive doctor script with actionable output
+- **🎯 XDG compliance** — Full Base Directory specification support
+- **🚀 Version checking** — Minimum version requirements for critical tools
+- **🌟 Fast prompt (optional)** — Starship support without heavy frameworks
 
 ## 🚀 Quick Start
 
@@ -42,7 +43,10 @@ chmod +x bootstrap_machine_rites.sh
 
 # Reload shell
 exec bash -l
-```
+
+# (Optional) If you didn't install Starship during bootstrap:
+curl -sS https://starship.rs/install.sh | sh -s -- -y -b "$HOME/.local/bin"
+````
 
 ### Daily Usage
 
@@ -76,19 +80,20 @@ Options:
 ├── .bashrc                       # Main loader with shellcheck pragmas
 ├── .bashrc.d/                    # Modular configs (numbered for order)
 │   ├── 00-hygiene.sh            # Shell options, PATH, XDG setup
-│   ├── 10-bash-completion.sh    # Completions
-│   ├── 20-oh-my-bash.sh         # Optional OMB integration
+│   ├── 10-bash-completion.sh    # Base bash-completion
 │   ├── 30-secrets.sh            # Pass/GPG secrets management
 │   ├── 35-ssh.sh                # Smart SSH agent (single instance)
-│   ├── 40-tools.sh              # Tool configs (nvm, pyenv, cargo)
-│   ├── 50-prompt.sh             # Git-aware prompt (Ubuntu paths)
+│   ├── 40-tools.sh              # Tool configs (nvm, pyenv, cargo, etc.)
+│   ├── 41-completions.sh        # Tool-specific completions (git, gh, kubectl, docker, aws, terraform)
+│   ├── 50-prompt.sh             # Git-aware prompt (fallback)
+│   ├── 55-starship.sh           # Starship prompt (optional; auto-enabled if installed)
 │   ├── 60-aliases.sh            # Aliases and shortcuts
 │   └── 99-local.sh              # Local overrides (gitignored)
 │
 ├── .config/
 │   ├── chezmoi/
 │   │   └── chezmoi.toml         # Dynamic config with git detection
-│   └── secrets.env              # Legacy secrets (auto-migrated)
+│   └── starship.toml            # Starship config (auto-created if missing)
 │
 ├── .local/
 │   ├── state/ssh/               # SSH agent persistence (XDG)
@@ -113,29 +118,46 @@ Options:
 ## 🔑 Critical Fixes Included
 
 ### SSH Agent Management
-- **Problem**: Multiple agents spawned per session
-- **Solution**: Single persistent agent via XDG state directory
-- **Result**: No more orphaned processes, consistent key availability
+
+* **Problem:** Multiple agents spawned per session
+* **Solution:** Single persistent agent via XDG state directory
+* **Result:** No more orphaned processes, consistent key availability
 
 ### Dynamic Configuration
-- **Problem**: Hardcoded email addresses
-- **Solution**: Auto-detection from git config with fallback prompts
-- **Result**: Works correctly for any user
+
+* **Problem:** Hardcoded email addresses
+* **Solution:** Auto-detection from git config with fallback prompts
+* **Result:** Works correctly for any user
 
 ### ShellCheck Compliance
-- **Problem**: SC1090/SC1091 warnings for dynamic sources
-- **Solution**: Proper pragma directives in all shell files
-- **Result**: Clean CI runs without false positives
+
+* **Problem:** SC1090/SC1091 warnings for dynamic sources
+* **Solution:** Proper pragma directives in all shell files
+* **Result:** Clean CI runs without false positives
 
 ### CI/CD Permissions
-- **Problem**: Gitleaks couldn't comment on PRs
-- **Solution**: Added `pull-requests: write` permission
-- **Result**: Security feedback directly in PR comments
+
+* **Problem:** Gitleaks couldn't comment on PRs
+* **Solution:** Added `pull-requests: write` permission
+* **Result:** Security feedback directly in PR comments
 
 ### Atomic File Operations
-- **Problem**: Partial writes during failures
-- **Solution**: Write to temp file, then atomic rename
-- **Result**: No corrupted configs on interrupt
+
+* **Problem:** Partial writes during failures
+* **Solution:** Write to temp file, then atomic rename
+* **Result:** No corrupted configs on interrupt
+
+### Backup Hygiene
+
+* **New:** Keep only the latest 5 dotfiles backups automatically
+
+### Secrets Export Robustness
+
+* **New:** `pass_env` uses `pass find` with filtering (no ASCII tree parsing)
+
+### Prompt Modernization
+
+* **New:** Optional Starship prompt; clean fallbacks without Oh-My-Bash
 
 ## 🛠️ Make Commands
 
@@ -171,6 +193,7 @@ make gpg-setup            # Setup GPG for pass
 ## 🔐 Security Features
 
 ### Secret Management
+
 ```bash
 # Automatic migration from plaintext
 # ~/.config/secrets.env → pass (GPG-encrypted)
@@ -183,11 +206,13 @@ echo $GITHUB_TOKEN
 ```
 
 ### Pre-commit Hooks
-- **Gitleaks**: Scans for secrets before commit
-- **ShellCheck**: Static analysis for shell scripts
-- Custom patterns in `.gitleaks.toml`
+
+* **Gitleaks:** Scans for secrets before commit
+* **ShellCheck:** Static analysis for shell scripts
+* Custom patterns in `.gitleaks.toml`
 
 ### Rollback Mechanism
+
 ```bash
 # Every bootstrap creates timestamped backup
 ~/dotfiles-backup-20240115-143022/
@@ -200,11 +225,11 @@ echo $GITHUB_TOKEN
 
 GitHub Actions workflow includes:
 
-1. **Chezmoi validation** - Dry-run apply
-2. **ShellCheck** - All shell scripts
-3. **Pre-commit hooks** - Local and CI consistency
-4. **Gitleaks scanning** - With PR comments
-5. **Proper permissions** - Can comment on PRs
+1. **Chezmoi validation** — Dry-run apply
+2. **ShellCheck** — All shell scripts
+3. **Pre-commit hooks** — Local and CI consistency
+4. **Gitleaks scanning** — With PR comments
+5. **Proper permissions** — Can comment on PRs
 
 ## 📝 Customization
 
@@ -360,32 +385,14 @@ $ make doctor
 
 ## 📚 References
 
-- [Chezmoi Documentation](https://chezmoi.io)
-- [Pass: The Standard Unix Password Manager](https://passwordstore.org)
-- [Gitleaks: Secret Detection](https://github.com/gitleaks/gitleaks)
-- [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/latest/)
-- [SSH Agent Best Practices](https://valerioviperino.me/reusing-an-existing-ssh-agent/)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/improvement`)
-3. Make your changes
-4. Run tests: `make test`
-5. Commit with conventional commits
-6. Push and create a PR
-
-## 📄 License
-
-MIT - See [LICENSE](LICENSE) file for details
-
-## 🙏 Acknowledgments
-
-- Ubuntu/Debian teams for excellent package management
-- Chezmoi for declarative dotfiles
-- Pass community for simple, secure secrets
-- ShellCheck for saving us from bash gotchas
+* [Chezmoi Documentation](https://chezmoi.io)
+* [Pass: The Standard Unix Password Manager](https://passwordstore.org)
+* [Gitleaks: Secret Detection](https://github.com/gitleaks/gitleaks)
+* [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/latest/)
+* [SSH Agent Best Practices](https://valerioviperino.me/reusing-an-existing-ssh-agent/)
+* [Starship Prompt](https://starship.rs)
 
 ---
 
-**Version**: 2.0.0 | **Tested on**: Ubuntu 24.04 LTS | **Last Updated**: 2024
+**Version**: 2.1.0 | **Tested on**: Ubuntu 24.04 LTS | **Last Updated**: 2025-09-18
+

@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate-dotfiles:
+    name: Validate dotfiles
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Install chezmoi
+        run: |
+          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      - name: Validate chezmoi
+        run: |
+          test -d ".chezmoi" || { echo "::error::.chezmoi source dir not found"; exit 1; }
+          chezmoi --source ./.chezmoi apply --dry-run
+      
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@v2
+        with:
+          scandir: .
+          check_together: "yes"
+          severity: warning
+      
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files
+        env:
+          SKIP: no-commit-to-branch
+  
+  gitleaks:
+    name: Security scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: true
+        with:
+          args: --no-banner --redact

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# ~/.bashrc — modular personal setup
+# shellcheck shell=bash
+case $- in *i*) ;; *) return ;; esac
+for snip in "$HOME/.bashrc.d/"*.sh; do
+  # shellcheck source=/dev/null
+  [[ -r "$snip" ]] && . "$snip"
+done
+unset snip
