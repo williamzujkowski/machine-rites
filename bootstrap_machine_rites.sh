@@ -360,7 +360,7 @@ PASS_PREFIX="${PASS_PREFIX:-personal}"
 
 pass_env() {
   command -v pass >/dev/null 2>&1 || return 0
-  local prefix="${1:-$PASS_PREFIX}" item var val
+  local prefix="${PASS_PREFIX}" item var val  # Fixed: removed parameter reference
   while IFS= read -r item; do
     [[ "$item" == "Search Terms:"* ]] && continue
     [[ -z "$item" ]] && continue
@@ -808,6 +808,11 @@ truncate_to_repo = true
 STAR
 else
   info "Existing starship.toml found, preserving"
+  # Fix common issue with uppercase keys in git_status section
+  if grep -q '^STASHED' "$XDG_CONFIG_HOME/starship.toml" 2>/dev/null; then
+    sed -i 's/^STASHED/stashed/g' "$XDG_CONFIG_HOME/starship.toml"
+    info "Fixed uppercase STASHED key in starship.toml"
+  fi
 fi
 
 # ----- pre-commit -----
