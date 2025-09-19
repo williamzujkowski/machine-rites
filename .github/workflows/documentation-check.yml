@@ -193,7 +193,7 @@ jobs:
         if: ${{ github.event.inputs.check_type == 'audit' || github.event_name == 'schedule' }}
 
       - name: Upload reports as artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: documentation-reports-${{ github.run_number }}
           path: reports/
