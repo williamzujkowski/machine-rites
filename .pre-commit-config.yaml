@@ -1,13 +1,12 @@
 repos:
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.28.0
+    rev: v8.18.4
     hooks:
       - id: gitleaks
         args: ["--no-banner", "--redact", "--staged"]
   
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.11.0.1
+    rev: v0.10.0.1
     hooks:
       - id: shellcheck
         args: ["--severity=warning"]
-        exclude: ^\.claude/

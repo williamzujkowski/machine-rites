@@ -34,36 +34,36 @@ DOCKER_NC := \033[0m
 
 # Logging functions
 define log_info
-	@echo -e "$(BLUE)[INFO]$(NC) $(1)"
+	@printf "$(BLUE)[INFO]$(NC) %s\n" $(1)
 endef
 
 define log_success
-	@echo -e "$(GREEN)[SUCCESS]$(NC) $(1)"
+	@printf "$(GREEN)[SUCCESS]$(NC) %s\n" $(1)
 endef
 
 define log_warn
-	@echo -e "$(YELLOW)[WARN]$(NC) $(1)"
+	@printf "$(YELLOW)[WARN]$(NC) %s\n" $(1)
 endef
 
 define log_error
-	@echo -e "$(RED)[ERROR]$(NC) $(1)"
+	@printf "$(RED)[ERROR]$(NC) %s\n" $(1)
 endef
 
 # Docker helper functions
 define docker_log_info
-	@echo -e "$(DOCKER_BLUE)[DOCKER-INFO]$(DOCKER_NC) $(1)"
+	@printf "$(DOCKER_BLUE)[DOCKER-INFO]$(DOCKER_NC) %s\n" $(1)
 endef
 
 define docker_log_success
-	@echo -e "$(DOCKER_GREEN)[DOCKER-SUCCESS]$(DOCKER_NC) $(1)"
+	@printf "$(DOCKER_GREEN)[DOCKER-SUCCESS]$(DOCKER_NC) %s\n" $(1)
 endef
 
 define docker_log_warn
-	@echo -e "$(DOCKER_YELLOW)[DOCKER-WARN]$(DOCKER_NC) $(1)"
+	@printf "$(DOCKER_YELLOW)[DOCKER-WARN]$(DOCKER_NC) %s\n" $(1)
 endef
 
 define docker_log_error
-	@echo -e "$(DOCKER_RED)[DOCKER-ERROR]$(DOCKER_NC) $(1)"
+	@printf "$(DOCKER_RED)[DOCKER-ERROR]$(DOCKER_NC) %s\n" $(1)
 endef
 
 define validate_distro
@@ -291,9 +291,9 @@ validate-syntax: ## Validate shell script syntax
 	$(call log_info,"Validating shell script syntax...")
 	@if command -v shellcheck >/dev/null 2>&1; then \
 		find "$(PROJECT_ROOT)" -name "*.sh" -type f -exec shellcheck {} + || \
-		echo -e "$(YELLOW)[WARN]$(NC) shellcheck found issues"; \
+		printf "$(YELLOW)[WARN]$(NC) shellcheck found issues\n"; \
 	else \
-		echo -e "$(YELLOW)[WARN]$(NC) shellcheck not available"; \
+		printf "$(YELLOW)[WARN]$(NC) shellcheck not available\n"; \
 	fi
 
 .PHONY: validate-structure
@@ -328,12 +328,12 @@ lint: ## Run linting tools
 	@if command -v shellcheck >/dev/null 2>&1; then \
 		find "$(PROJECT_ROOT)" -name "*.sh" -type f -exec shellcheck {} +; \
 	else \
-		echo -e "$(YELLOW)[WARN]$(NC) shellcheck not installed"; \
+		printf "$(YELLOW)[WARN]$(NC) shellcheck not installed\n"; \
 	fi
 	@if command -v hadolint >/dev/null 2>&1; then \
 		find "$(PROJECT_ROOT)/docker" -name "Dockerfile" -exec hadolint {} +; \
 	else \
-		echo -e "$(YELLOW)[WARN]$(NC) hadolint not installed"; \
+		printf "$(YELLOW)[WARN]$(NC) hadolint not installed\n"; \
 	fi
 
 .PHONY: format
@@ -342,7 +342,7 @@ format: ## Format shell scripts
 	@if command -v shfmt >/dev/null 2>&1; then \
 		find "$(PROJECT_ROOT)" -name "*.sh" -type f -exec shfmt -w -i 4 {} +; \
 	else \
-		echo -e "$(YELLOW)[WARN]$(NC) shfmt not installed - skipping formatting"; \
+		printf "$(YELLOW)[WARN]$(NC) shfmt not installed - skipping formatting\n"; \
 	fi
 
 .PHONY: deps-check

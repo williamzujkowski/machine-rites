@@ -9,7 +9,5 @@ regex = '''(?i)(api[_-]?key|apikey)['""]?\s*[:=]\s*['""]?([a-z0-9]{32,})'''
 [allowlist]
 paths = [
   '''vendor/''',
-  '''node_modules/''',
-  '''tests/fixtures/test_data\.sh$''',
-  '''security/security-findings\.txt$'''
+  '''node_modules/'''
 ]
