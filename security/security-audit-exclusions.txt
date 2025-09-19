@@ -1,0 +1,10 @@
+# Security Audit Exclusions
+.git/
+node_modules/
+*.test.*
+*example*
+*demo*
+*sample*
+tests/fixtures/
+*.log
+*.tmp

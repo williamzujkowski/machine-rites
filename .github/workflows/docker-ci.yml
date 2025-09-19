@@ -1,0 +1,407 @@
+name: Docker CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      test_scenarios:
+        description: 'Test scenarios to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - fresh
+          - upgrade
+          - minimal
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  CACHE_KEY_PREFIX: docker-ci
+
+jobs:
+  build-cache:
+    name: Build Docker Images with Cache
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        distro:
+          - name: ubuntu-24.04
+            tag: ubuntu-24.04
+            dockerfile: Dockerfile.ubuntu-24.04
+          - name: ubuntu-22.04
+            tag: ubuntu-22.04
+            dockerfile: Dockerfile.ubuntu-22.04
+          - name: debian-12
+            tag: debian-12
+            dockerfile: Dockerfile.debian-12
+    outputs:
+      cache-hit-ubuntu-24-04: ${{ steps.cache-ubuntu-24-04.outputs.cache-hit }}
+      cache-hit-ubuntu-22-04: ${{ steps.cache-ubuntu-22-04.outputs.cache-hit }}
+      cache-hit-debian-12: ${{ steps.cache-debian-12.outputs.cache-hit }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+
+      - name: Cache Docker layers for ${{ matrix.distro.name }}
+        id: cache-${{ matrix.distro.name }}
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache-${{ matrix.distro.name }}
+          key: ${{ env.CACHE_KEY_PREFIX }}-${{ matrix.distro.name }}-${{ hashFiles('**/${{ matrix.distro.dockerfile }}', '**/bootstrap_machine_rites.sh', '**/makefile') }}
+          restore-keys: |
+            ${{ env.CACHE_KEY_PREFIX }}-${{ matrix.distro.name }}-
+
+      - name: Build Docker image for ${{ matrix.distro.name }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./.github/docker/${{ matrix.distro.dockerfile }}
+          platforms: linux/amd64
+          push: false
+          tags: machine-rites:${{ matrix.distro.tag }}
+          cache-from: type=local,src=/tmp/.buildx-cache-${{ matrix.distro.name }}
+          cache-to: type=local,dest=/tmp/.buildx-cache-${{ matrix.distro.name }}-new,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache-${{ matrix.distro.name }}
+          mv /tmp/.buildx-cache-${{ matrix.distro.name }}-new /tmp/.buildx-cache-${{ matrix.distro.name }}
+
+  test-matrix:
+    name: Test Matrix
+    needs: build-cache
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [ubuntu-24.04, ubuntu-22.04, debian-12]
+        scenario: [fresh, upgrade, minimal]
+        include:
+          - distro: ubuntu-24.04
+            container_tag: ubuntu-24.04
+            dockerfile: Dockerfile.ubuntu-24.04
+          - distro: ubuntu-22.04
+            container_tag: ubuntu-22.04
+            dockerfile: Dockerfile.ubuntu-22.04
+          - distro: debian-12
+            container_tag: debian-12
+            dockerfile: Dockerfile.debian-12
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Restore Docker cache for ${{ matrix.distro }}
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache-${{ matrix.distro }}
+          key: ${{ env.CACHE_KEY_PREFIX }}-${{ matrix.distro }}-${{ hashFiles('**/${{ matrix.dockerfile }}', '**/bootstrap_machine_rites.sh', '**/makefile') }}
+          restore-keys: |
+            ${{ env.CACHE_KEY_PREFIX }}-${{ matrix.distro }}-
+
+      - name: Load Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./.github/docker/${{ matrix.dockerfile }}
+          load: true
+          tags: machine-rites:${{ matrix.container_tag }}
+          cache-from: type=local,src=/tmp/.buildx-cache-${{ matrix.distro }}
+
+      - name: Create test results directory
+        run: mkdir -p test-results/${{ matrix.distro }}-${{ matrix.scenario }}
+
+      - name: Run ${{ matrix.scenario }} installation test on ${{ matrix.distro }}
+        id: test-run
+        run: |
+          case "${{ matrix.scenario }}" in
+            fresh)
+              echo "Running fresh installation test..."
+              docker run --rm \
+                -v ${{ github.workspace }}/test-results/${{ matrix.distro }}-${{ matrix.scenario }}:/test-results \
+                -e TEST_SCENARIO=fresh \
+                -e CI=true \
+                machine-rites:${{ matrix.container_tag }} \
+                /bin/bash -c "
+                  cd /workspace &&
+                  echo 'Starting fresh installation test...' &&
+                  timeout 300 bash bootstrap_machine_rites.sh --unattended --test &&
+                  echo 'Fresh installation completed successfully' > /test-results/result.txt &&
+                  make ci-test > /test-results/ci-test.log 2>&1 &&
+                  echo 'CI tests passed' >> /test-results/result.txt
+                "
+              ;;
+            upgrade)
+              echo "Running upgrade scenario test..."
+              docker run --rm \
+                -v ${{ github.workspace }}/test-results/${{ matrix.distro }}-${{ matrix.scenario }}:/test-results \
+                -e TEST_SCENARIO=upgrade \
+                -e CI=true \
+                machine-rites:${{ matrix.container_tag }} \
+                /bin/bash -c "
+                  cd /workspace &&
+                  echo 'Setting up existing installation...' &&
+                  bash bootstrap_machine_rites.sh --unattended --minimal &&
+                  echo 'Running upgrade test...' &&
+                  timeout 300 bash bootstrap_machine_rites.sh --unattended --upgrade &&
+                  echo 'Upgrade completed successfully' > /test-results/result.txt &&
+                  make ci-test > /test-results/ci-test.log 2>&1 &&
+                  echo 'Upgrade tests passed' >> /test-results/result.txt
+                "
+              ;;
+            minimal)
+              echo "Running minimal installation test..."
+              docker run --rm \
+                -v ${{ github.workspace }}/test-results/${{ matrix.distro }}-${{ matrix.scenario }}:/test-results \
+                -e TEST_SCENARIO=minimal \
+                -e CI=true \
+                machine-rites:${{ matrix.container_tag }} \
+                /bin/bash -c "
+                  cd /workspace &&
+                  echo 'Starting minimal installation test...' &&
+                  timeout 180 bash bootstrap_machine_rites.sh --unattended --minimal &&
+                  echo 'Minimal installation completed successfully' > /test-results/result.txt &&
+                  make lint > /test-results/lint.log 2>&1 &&
+                  echo 'Minimal tests passed' >> /test-results/result.txt
+                "
+              ;;
+          esac
+        continue-on-error: true
+
+      - name: Check test results
+        id: check-results
+        run: |
+          if [ -f "test-results/${{ matrix.distro }}-${{ matrix.scenario }}/result.txt" ]; then
+            echo "test_status=success" >> $GITHUB_OUTPUT
+            echo "test_message=$(cat test-results/${{ matrix.distro }}-${{ matrix.scenario }}/result.txt | tr '\n' ' ')" >> $GITHUB_OUTPUT
+          else
+            echo "test_status=failure" >> $GITHUB_OUTPUT
+            echo "test_message=Test execution failed for ${{ matrix.distro }} ${{ matrix.scenario }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.distro }}-${{ matrix.scenario }}
+          path: test-results/${{ matrix.distro }}-${{ matrix.scenario }}/
+          retention-days: 7
+
+      - name: Update job summary
+        if: always()
+        run: |
+          echo "## Test Results: ${{ matrix.distro }} - ${{ matrix.scenario }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.check-results.outputs.test_status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Message:** ${{ steps.check-results.outputs.test_message }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "test-results/${{ matrix.distro }}-${{ matrix.scenario }}/ci-test.log" ]; then
+            echo "### CI Test Output" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -20 test-results/${{ matrix.distro }}-${{ matrix.scenario }}/ci-test.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+  aggregate-results:
+    name: Aggregate Test Results
+    needs: test-matrix
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-test-results/
+
+      - name: Aggregate test results
+        id: aggregate
+        run: |
+          mkdir -p aggregated-results
+
+          # Initialize counters
+          total_tests=0
+          passed_tests=0
+          failed_tests=0
+
+          # Create summary file
+          echo "# Docker CI Test Results Summary" > aggregated-results/summary.md
+          echo "" >> aggregated-results/summary.md
+          echo "| Distro | Scenario | Status | Message |" >> aggregated-results/summary.md
+          echo "|--------|----------|--------|---------|" >> aggregated-results/summary.md
+
+          # Process all test results
+          for result_dir in all-test-results/*/; do
+            if [ -d "$result_dir" ]; then
+              dir_name=$(basename "$result_dir")
+              if [[ "$dir_name" =~ test-results-(.+)-(.+) ]]; then
+                distro="${BASH_REMATCH[1]}"
+                scenario="${BASH_REMATCH[2]}"
+
+                total_tests=$((total_tests + 1))
+
+                if [ -f "$result_dir/result.txt" ]; then
+                  status="✅ PASS"
+                  passed_tests=$((passed_tests + 1))
+                  message=$(cat "$result_dir/result.txt" | head -1)
+                else
+                  status="❌ FAIL"
+                  failed_tests=$((failed_tests + 1))
+                  message="Test execution failed"
+                fi
+
+                echo "| $distro | $scenario | $status | $message |" >> aggregated-results/summary.md
+              fi
+            fi
+          done
+
+          # Add summary statistics
+          echo "" >> aggregated-results/summary.md
+          echo "## Summary Statistics" >> aggregated-results/summary.md
+          echo "- **Total Tests:** $total_tests" >> aggregated-results/summary.md
+          echo "- **Passed:** $passed_tests" >> aggregated-results/summary.md
+          echo "- **Failed:** $failed_tests" >> aggregated-results/summary.md
+          echo "- **Success Rate:** $(( passed_tests * 100 / total_tests ))%" >> aggregated-results/summary.md
+
+          # Set outputs
+          echo "total_tests=$total_tests" >> $GITHUB_OUTPUT
+          echo "passed_tests=$passed_tests" >> $GITHUB_OUTPUT
+          echo "failed_tests=$failed_tests" >> $GITHUB_OUTPUT
+          echo "success_rate=$(( passed_tests * 100 / total_tests ))" >> $GITHUB_OUTPUT
+
+      - name: Create test dashboard
+        run: |
+          cat > aggregated-results/dashboard.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Machine Rites CI Dashboard</title>
+              <style>
+                  body { font-family: Arial, sans-serif; margin: 20px; }
+                  .header { background: #f0f0f0; padding: 20px; border-radius: 5px; }
+                  .stats { display: flex; gap: 20px; margin: 20px 0; }
+                  .stat-box { background: #e8f4fd; padding: 15px; border-radius: 5px; flex: 1; text-align: center; }
+                  .success { background: #d4edda; }
+                  .failure { background: #f8d7da; }
+                  table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                  th { background-color: #f2f2f2; }
+              </style>
+          </head>
+          <body>
+              <div class="header">
+                  <h1>Machine Rites Docker CI Dashboard</h1>
+                  <p>Build: #${{ github.run_number }} | Commit: ${{ github.sha }} | Branch: ${{ github.ref_name }}</p>
+              </div>
+              <div class="stats">
+                  <div class="stat-box">
+                      <h3>Total Tests</h3>
+                      <p>${{ steps.aggregate.outputs.total_tests }}</p>
+                  </div>
+                  <div class="stat-box success">
+                      <h3>Passed</h3>
+                      <p>${{ steps.aggregate.outputs.passed_tests }}</p>
+                  </div>
+                  <div class="stat-box failure">
+                      <h3>Failed</h3>
+                      <p>${{ steps.aggregate.outputs.failed_tests }}</p>
+                  </div>
+                  <div class="stat-box">
+                      <h3>Success Rate</h3>
+                      <p>${{ steps.aggregate.outputs.success_rate }}%</p>
+                  </div>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload aggregated results
+        uses: actions/upload-artifact@v4
+        with:
+          name: aggregated-test-results
+          path: aggregated-results/
+          retention-days: 30
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('aggregated-results/summary.md', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+      - name: Set job status
+        run: |
+          if [ "${{ steps.aggregate.outputs.failed_tests }}" -gt 0 ]; then
+            echo "❌ Some tests failed"
+            exit 1
+          else
+            echo "✅ All tests passed"
+          fi
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-cache
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'machine-rites:ubuntu-24.04'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  notify-failure:
+    name: Notify on Failure
+    needs: [test-matrix, aggregate-results]
+    runs-on: ubuntu-latest
+    if: failure()
+
+    steps:
+      - name: Notify failure
+        run: |
+          echo "::warning::Docker CI pipeline failed. Check the test results for details."
+          echo "Failed jobs:"
+          echo "- Build or test execution failed"
+          echo "Please check the job logs and test artifacts for more information."

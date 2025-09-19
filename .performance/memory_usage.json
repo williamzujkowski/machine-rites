@@ -1,0 +1,46 @@
+{
+        "test": "memory_usage",
+        "total_mb": 64012,
+        "used_mb": 10767,
+        "free_mb": 31523,
+        "usage_percent": 16.82,
+        "top_processes": [
+  {
+    "process": "/snap/multipass/15703/usr/bin/qemu-system-x86_64",
+    "memory_percent": 3.0
+  },
+  {
+    "process": "/proc/self/exe",
+    "memory_percent": 1.0
+  },
+  {
+    "process": "claude",
+    "memory_percent": 0.9
+  },
+  {
+    "process": "/opt/google/chrome/chrome",
+    "memory_percent": 0.8
+  },
+  {
+    "process": "/home/william/snap/steam/common/.local/share/Steam/ubuntu12_64/steamwebhelper",
+    "memory_percent": 0.8
+  },
+  {
+    "process": "/snap/code/206/usr/share/code/code",
+    "memory_percent": 0.6
+  },
+  {
+    "process": "/opt/google/chrome/chrome",
+    "memory_percent": 0.6
+  },
+  {
+    "process": "/usr/bin/gnome-shell",
+    "memory_percent": 0.6
+  },
+  {
+    "process": "./steamwebhelper",
+    "memory_percent": 0.5
+  }
+],
+        "timestamp": "2025-09-19T09:53:37-04:00"
+    }

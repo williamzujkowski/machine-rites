@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>machine-rites Test Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .metric { background: #f8f9fa; padding: 15px; border-radius: 5px; text-align: center; }
+        .metric-value { font-size: 24px; font-weight: bold; color: #333; }
+        .metric-label { font-size: 14px; color: #666; margin-top: 5px; }
+        .passed { color: #28a745; }
+        .failed { color: #dc3545; }
+        .skipped { color: #ffc107; }
+        .section { margin-bottom: 30px; }
+        .section h2 { border-bottom: 2px solid #dee2e6; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        th { background-color: #f8f9fa; font-weight: 600; }
+        .status-passed { color: #28a745; font-weight: bold; }
+        .status-failed { color: #dc3545; font-weight: bold; }
+        .status-skipped { color: #ffc107; font-weight: bold; }
+        .progress-bar { width: 100%; height: 20px; background-color: #e9ecef; border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background-color: #28a745; transition: width 0.3s ease; }
+        .timestamp { color: #6c757d; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>machine-rites Test Report</h1>
+            <p class="timestamp">Generated on $(date)</p>
+        </div>
+        <div class="summary">
+            <div class="metric">
+                <div class="metric-value">0</div>
+                <div class="metric-label">Total Tests</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value passed">0</div>
+                <div class="metric-label">Passed</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value failed">0</div>
+                <div class="metric-label">Failed</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value skipped">0</div>
+                <div class="metric-label">Skipped</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value">0%</div>
+                <div class="metric-label">Success Rate</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Success Rate</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+        <div class="section">
+            <h2>Unit Tests</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Test Name</th>
+                        <th>Status</th>
+                        <th>Duration</th>
+                        <th>Category</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>test_bootstrap</td>
+                        <td><span class="status-passed">PASSED</span></td>
+                        <td>0.123s</td>
+                        <td>unit</td>
+                    </tr>
+                    <tr>
+                        <td>test_atomic_operations</td>
+                        <td><span class="status-passed">PASSED</span></td>
+                        <td>0.123s</td>
+                        <td>unit</td>
+                    </tr>
+                    <tr>
+                        <td>test_platform_detection</td>
+                        <td><span class="status-passed">PASSED</span></td>
+                        <td>0.123s</td>
+                        <td>unit</td>
+                    </tr>
+                    <tr>
+                        <td>test_validation</td>
+                        <td><span class="status-passed">PASSED</span></td>
+                        <td>0.123s</td>
+                        <td>unit</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

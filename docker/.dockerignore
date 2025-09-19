@@ -1,0 +1,74 @@
+# Docker ignore file for machine-rites testing
+# Exclude unnecessary files from Docker build context
+
+# Git files
+.git
+.gitignore
+.gitmodules
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Test results
+test-results/
+coverage/
+*.coverage
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Cache directories
+.cache/
+node_modules/
+__pycache__/
+
+# Build artifacts
+*.o
+*.so
+*.dylib
+*.exe
+
+# Archives
+*.tar
+*.tar.gz
+*.zip
+*.rar
+
+# Documentation build output
+docs/_build/
+site/
+
+# Local configuration
+.env
+.env.local
+config/local.conf
+
+# SSH keys and secrets
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Docker files (to prevent recursive copying)
+Dockerfile
+docker-compose*.yml
+.dockerignore

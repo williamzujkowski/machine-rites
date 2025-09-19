@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  ubuntu-24:
+    build:
+      context: ./docker/ubuntu-24.04
+      dockerfile: Dockerfile
+    image: machine-rites/ubuntu-24.04:test
+    container_name: machine-rites-ubuntu-24
+    hostname: ubuntu-24-test
+    volumes:
+      # Mount the entire repository for live testing
+      - .:/opt/machine-rites:rw
+      # Mount separate directories for isolation
+      - ./tests:/opt/machine-rites/tests:ro
+      - ./bootstrap:/opt/machine-rites/bootstrap:ro
+      - ./lib:/opt/machine-rites/lib:ro
+      # Volume for test artifacts
+      - test-artifacts-ubuntu-24:/tmp/test-artifacts
+      # Volume for temporary files
+      - /tmp/machine-rites-ubuntu-24:/tmp/machine-rites
+    environment:
+      - MACHINE_RITES_TEST=true
+      - DISTRO=ubuntu-24.04
+      - TEST_RUNNER=docker
+      - CI=true
+    working_dir: /opt/machine-rites
+    command: tail -f /dev/null
+    networks:
+      - machine-rites-test
+    healthcheck:
+      test: ["CMD", "test", "-f", "/opt/machine-rites/README.md"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  ubuntu-22:
+    build:
+      context: ./docker/ubuntu-22.04
+      dockerfile: Dockerfile
+    image: machine-rites/ubuntu-22.04:test
+    container_name: machine-rites-ubuntu-22
+    hostname: ubuntu-22-test
+    volumes:
+      # Mount the entire repository for live testing
+      - .:/opt/machine-rites:rw
+      # Mount separate directories for isolation
+      - ./tests:/opt/machine-rites/tests:ro
+      - ./bootstrap:/opt/machine-rites/bootstrap:ro
+      - ./lib:/opt/machine-rites/lib:ro
+      # Volume for test artifacts
+      - test-artifacts-ubuntu-22:/tmp/test-artifacts
+      # Volume for temporary files
+      - /tmp/machine-rites-ubuntu-22:/tmp/machine-rites
+    environment:
+      - MACHINE_RITES_TEST=true
+      - DISTRO=ubuntu-22.04
+      - TEST_RUNNER=docker
+      - CI=true
+    working_dir: /opt/machine-rites
+    command: tail -f /dev/null
+    networks:
+      - machine-rites-test
+    healthcheck:
+      test: ["CMD", "test", "-f", "/opt/machine-rites/README.md"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  debian-12:
+    build:
+      context: ./docker/debian-12
+      dockerfile: Dockerfile
+    image: machine-rites/debian-12:test
+    container_name: machine-rites-debian-12
+    hostname: debian-12-test
+    volumes:
+      # Mount the entire repository for live testing
+      - .:/opt/machine-rites:rw
+      # Mount separate directories for isolation
+      - ./tests:/opt/machine-rites/tests:ro
+      - ./bootstrap:/opt/machine-rites/bootstrap:ro
+      - ./lib:/opt/machine-rites/lib:ro
+      # Volume for test artifacts
+      - test-artifacts-debian-12:/tmp/test-artifacts
+      # Volume for temporary files
+      - /tmp/machine-rites-debian-12:/tmp/machine-rites
+    environment:
+      - MACHINE_RITES_TEST=true
+      - DISTRO=debian-12
+      - TEST_RUNNER=docker
+      - CI=true
+    working_dir: /opt/machine-rites
+    command: tail -f /dev/null
+    networks:
+      - machine-rites-test
+    healthcheck:
+      test: ["CMD", "test", "-f", "/opt/machine-rites/README.md"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  machine-rites-test:
+    driver: bridge
+    name: machine-rites-test
+
+volumes:
+  test-artifacts-ubuntu-24:
+    name: machine-rites-test-artifacts-ubuntu-24
+  test-artifacts-ubuntu-22:
+    name: machine-rites-test-artifacts-ubuntu-22
+  test-artifacts-debian-12:
+    name: machine-rites-test-artifacts-debian-12

@@ -1,0 +1,129 @@
+version: '3.8'
+
+# Docker Compose for local CI testing
+# Usage: docker-compose -f .github/docker/docker-compose.test.yml up --build
+
+services:
+  test-ubuntu-24-04:
+    build:
+      context: ../..
+      dockerfile: .github/docker/Dockerfile.ubuntu-24.04
+    container_name: machine-rites-test-ubuntu-24-04
+    environment:
+      - TEST_SCENARIO=fresh
+      - CI=true
+    volumes:
+      - test-results-ubuntu-24-04:/test-results
+      - ../..:/workspace:ro
+    working_dir: /workspace
+    command: .github/docker/test-runner.sh
+    networks:
+      - test-network
+
+  test-ubuntu-22-04:
+    build:
+      context: ../..
+      dockerfile: .github/docker/Dockerfile.ubuntu-22.04
+    container_name: machine-rites-test-ubuntu-22-04
+    environment:
+      - TEST_SCENARIO=fresh
+      - CI=true
+    volumes:
+      - test-results-ubuntu-22-04:/test-results
+      - ../..:/workspace:ro
+    working_dir: /workspace
+    command: .github/docker/test-runner.sh
+    networks:
+      - test-network
+
+  test-debian-12:
+    build:
+      context: ../..
+      dockerfile: .github/docker/Dockerfile.debian-12
+    container_name: machine-rites-test-debian-12
+    environment:
+      - TEST_SCENARIO=fresh
+      - CI=true
+    volumes:
+      - test-results-debian-12:/test-results
+      - ../..:/workspace:ro
+    working_dir: /workspace
+    command: .github/docker/test-runner.sh
+    networks:
+      - test-network
+
+  # Upgrade scenario tests
+  test-ubuntu-24-04-upgrade:
+    build:
+      context: ../..
+      dockerfile: .github/docker/Dockerfile.ubuntu-24.04
+    container_name: machine-rites-test-ubuntu-24-04-upgrade
+    environment:
+      - TEST_SCENARIO=upgrade
+      - CI=true
+    volumes:
+      - test-results-ubuntu-24-04-upgrade:/test-results
+      - ../..:/workspace:ro
+    working_dir: /workspace
+    command: .github/docker/test-runner.sh
+    networks:
+      - test-network
+    profiles:
+      - upgrade
+
+  # Minimal scenario tests
+  test-ubuntu-24-04-minimal:
+    build:
+      context: ../..
+      dockerfile: .github/docker/Dockerfile.ubuntu-24.04
+    container_name: machine-rites-test-ubuntu-24-04-minimal
+    environment:
+      - TEST_SCENARIO=minimal
+      - CI=true
+    volumes:
+      - test-results-ubuntu-24-04-minimal:/test-results
+      - ../..:/workspace:ro
+    working_dir: /workspace
+    command: .github/docker/test-runner.sh
+    networks:
+      - test-network
+    profiles:
+      - minimal
+
+  # Test result aggregator
+  test-aggregator:
+    image: alpine:latest
+    container_name: machine-rites-test-aggregator
+    depends_on:
+      - test-ubuntu-24-04
+      - test-ubuntu-22-04
+      - test-debian-12
+    volumes:
+      - test-results-ubuntu-24-04:/results/ubuntu-24-04:ro
+      - test-results-ubuntu-22-04:/results/ubuntu-22-04:ro
+      - test-results-debian-12:/results/debian-12:ro
+      - ./aggregate-results.sh:/aggregate-results.sh:ro
+    command: /bin/sh /aggregate-results.sh
+    networks:
+      - test-network
+    profiles:
+      - aggregator
+
+volumes:
+  test-results-ubuntu-24-04:
+    driver: local
+  test-results-ubuntu-22-04:
+    driver: local
+  test-results-debian-12:
+    driver: local
+  test-results-ubuntu-24-04-upgrade:
+    driver: local
+  test-results-ubuntu-24-04-minimal:
+    driver: local
+
+networks:
+  test-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

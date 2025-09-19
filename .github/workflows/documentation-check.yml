@@ -1,0 +1,343 @@
+name: Documentation Verification
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      check_type:
+        description: 'Type of check to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - docs-only
+          - vestigial-only
+          - audit
+      fix_issues:
+        description: 'Attempt to fix issues automatically'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  documentation-check:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for git analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+        if: hashFiles('package.json') != ''
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+        if: hashFiles('package.json') != ''
+        continue-on-error: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Make scripts executable
+        run: |
+          chmod +x tools/*.sh || true
+
+      - name: Verify tools exist
+        run: |
+          echo "Checking for documentation tools..."
+          ls -la tools/ || echo "Tools directory not found"
+          test -f tools/verify-docs.sh && echo "✓ verify-docs.sh found" || echo "✗ verify-docs.sh missing"
+          test -f tools/check-vestigial.sh && echo "✓ check-vestigial.sh found" || echo "✗ check-vestigial.sh missing"
+          test -f tools/update-claude-md.sh && echo "✓ update-claude-md.sh found" || echo "✗ update-claude-md.sh missing"
+          test -f tools/weekly-audit.sh && echo "✓ weekly-audit.sh found" || echo "✗ weekly-audit.sh missing"
+
+      - name: Run documentation verification
+        id: doc-check
+        run: |
+          echo "::group::Documentation Verification"
+
+          if [[ -f tools/verify-docs.sh ]]; then
+            mkdir -p reports
+
+            # Run documentation check
+            if ./tools/verify-docs.sh --format json --output reports/doc-check.json; then
+              echo "doc_check_success=true" >> $GITHUB_OUTPUT
+            else
+              echo "doc_check_success=false" >> $GITHUB_OUTPUT
+            fi
+
+            # Also generate markdown report for PR comments
+            ./tools/verify-docs.sh --format markdown --output reports/doc-check.md || true
+
+            # Extract issue count
+            if [[ -f reports/doc-check.json ]]; then
+              DOC_ISSUES=$(python3 -c "import json; f = open('reports/doc-check.json'); data = json.load(f); f.close(); print(sum(data.get('summary', {}).values()))" 2>/dev/null || echo "0")
+              echo "doc_issues=$DOC_ISSUES" >> $GITHUB_OUTPUT
+            else
+              echo "doc_issues=0" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "Documentation verification tool not found"
+            echo "doc_check_success=false" >> $GITHUB_OUTPUT
+            echo "doc_issues=0" >> $GITHUB_OUTPUT
+          fi
+
+          echo "::endgroup::"
+        if: ${{ github.event.inputs.check_type == 'all' || github.event.inputs.check_type == 'docs-only' || github.event.inputs.check_type == '' }}
+
+      - name: Run vestigial code check
+        id: vestigial-check
+        run: |
+          echo "::group::Vestigial Code Check"
+
+          if [[ -f tools/check-vestigial.sh ]]; then
+            mkdir -p reports
+
+            # Run vestigial code check
+            if ./tools/check-vestigial.sh --format json --output reports/vestigial-check.json; then
+              echo "vestigial_check_success=true" >> $GITHUB_OUTPUT
+            else
+              echo "vestigial_check_success=false" >> $GITHUB_OUTPUT
+            fi
+
+            # Also generate markdown report
+            ./tools/check-vestigial.sh --format markdown --output reports/vestigial-check.md || true
+
+            # Extract issue count
+            if [[ -f reports/vestigial-check.json ]]; then
+              VESTIGIAL_ISSUES=$(python3 -c "import json; f = open('reports/vestigial-check.json'); data = json.load(f); f.close(); print(sum(data.get('summary', {}).values()))" 2>/dev/null || echo "0")
+              echo "vestigial_issues=$VESTIGIAL_ISSUES" >> $GITHUB_OUTPUT
+            else
+              echo "vestigial_issues=0" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "Vestigial code check tool not found"
+            echo "vestigial_check_success=false" >> $GITHUB_OUTPUT
+            echo "vestigial_issues=0" >> $GITHUB_OUTPUT
+          fi
+
+          echo "::endgroup::"
+        if: ${{ github.event.inputs.check_type == 'all' || github.event.inputs.check_type == 'vestigial-only' || github.event.inputs.check_type == '' }}
+
+      - name: Fix issues automatically
+        id: auto-fix
+        run: |
+          echo "::group::Auto-fix Issues"
+
+          FIXED_ANYTHING=false
+
+          # Fix documentation issues
+          if [[ -f tools/verify-docs.sh ]] && [[ "${{ github.event.inputs.fix_issues }}" == "true" || "${{ github.event_name }}" == "schedule" ]]; then
+            echo "Attempting to fix documentation issues..."
+            if ./tools/verify-docs.sh --fix; then
+              FIXED_ANYTHING=true
+            fi
+          fi
+
+          # Update CLAUDE.md
+          if [[ -f tools/update-claude-md.sh ]]; then
+            echo "Updating CLAUDE.md..."
+            if ./tools/update-claude-md.sh; then
+              FIXED_ANYTHING=true
+            fi
+          fi
+
+          echo "fixed_anything=$FIXED_ANYTHING" >> $GITHUB_OUTPUT
+
+          echo "::endgroup::"
+        if: ${{ github.event.inputs.fix_issues == 'true' || github.event_name == 'schedule' }}
+
+      - name: Run weekly audit
+        id: weekly-audit
+        run: |
+          echo "::group::Weekly Audit"
+
+          if [[ -f tools/weekly-audit.sh ]]; then
+            mkdir -p reports
+
+            # Run weekly audit
+            ./tools/weekly-audit.sh --output-dir reports/weekly-audit || true
+
+            if [[ -f reports/weekly-audit/weekly-audit-report.md ]]; then
+              echo "audit_success=true" >> $GITHUB_OUTPUT
+              cp reports/weekly-audit/weekly-audit-report.md reports/weekly-audit-summary.md
+            else
+              echo "audit_success=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "Weekly audit tool not found"
+            echo "audit_success=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo "::endgroup::"
+        if: ${{ github.event.inputs.check_type == 'audit' || github.event_name == 'schedule' }}
+
+      - name: Upload reports as artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation-reports-${{ github.run_number }}
+          path: reports/
+          retention-days: 30
+        if: always()
+
+      - name: Comment on PR with results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Only comment on PRs
+            if (!context.payload.pull_request) return;
+
+            let comment = '## 📋 Documentation Verification Results\n\n';
+
+            // Documentation issues
+            const docIssues = '${{ steps.doc-check.outputs.doc_issues }}';
+            if (docIssues !== '0') {
+              comment += `⚠️ **Documentation Issues Found:** ${docIssues}\n\n`;
+
+              // Try to include the markdown report
+              try {
+                const docReport = fs.readFileSync('reports/doc-check.md', 'utf8');
+                comment += '<details>\n<summary>📚 Documentation Issues Details</summary>\n\n';
+                comment += docReport;
+                comment += '\n</details>\n\n';
+              } catch (e) {
+                comment += '_Detailed report not available_\n\n';
+              }
+            } else {
+              comment += '✅ **Documentation:** No issues found\n\n';
+            }
+
+            // Vestigial code issues
+            const vestigialIssues = '${{ steps.vestigial-check.outputs.vestigial_issues }}';
+            if (vestigialIssues !== '0') {
+              comment += `🧹 **Vestigial Code Found:** ${vestigialIssues} items\n\n`;
+
+              try {
+                const vestigialReport = fs.readFileSync('reports/vestigial-check.md', 'utf8');
+                comment += '<details>\n<summary>🗑️ Vestigial Code Details</summary>\n\n';
+                comment += vestigialReport;
+                comment += '\n</details>\n\n';
+              } catch (e) {
+                comment += '_Detailed report not available_\n\n';
+              }
+            } else {
+              comment += '✅ **Code Quality:** No unused code detected\n\n';
+            }
+
+            // Auto-fix results
+            if ('${{ steps.auto-fix.outputs.fixed_anything }}' === 'true') {
+              comment += '🔧 **Auto-fixes Applied:** Some issues were automatically resolved\n\n';
+            }
+
+            comment += '---\n_This check was performed automatically. Reports are available in the workflow artifacts._';
+
+            // Post comment
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+        if: ${{ always() && github.event_name == 'pull_request' }}
+
+      - name: Create issue for weekly audit
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Only create issues for scheduled runs
+            if (context.eventName !== 'schedule') return;
+
+            const auditSuccess = '${{ steps.weekly-audit.outputs.audit_success }}';
+
+            if (auditSuccess === 'true') {
+              let issueBody = '## 📊 Weekly Audit Report\n\n';
+              issueBody += `**Generated:** ${new Date().toISOString().split('T')[0]}\n\n`;
+
+              // Include summary from audit report
+              try {
+                const auditReport = fs.readFileSync('reports/weekly-audit-summary.md', 'utf8');
+                issueBody += auditReport;
+              } catch (e) {
+                issueBody += '_Audit report not available. Check workflow artifacts._\n';
+              }
+
+              issueBody += '\n\n---\n';
+              issueBody += `**Action Required:** Please review the findings and address high-priority issues.\n`;
+              issueBody += `**Workflow Run:** https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\n`;
+
+              // Create the issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `Weekly Audit Report - ${new Date().toISOString().split('T')[0]}`,
+                body: issueBody,
+                labels: ['documentation', 'weekly-audit', 'maintenance']
+              });
+            }
+        if: ${{ github.event_name == 'schedule' }}
+
+      - name: Commit auto-fixes
+        run: |
+          if [[ "${{ steps.auto-fix.outputs.fixed_anything }}" == "true" ]]; then
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+
+            git add -A
+
+            if ! git diff --staged --quiet; then
+              git commit -m "docs: auto-fix documentation issues
+
+              - Update CLAUDE.md with current project state
+              - Fix broken links and missing documentation
+              - Generated by documentation verification workflow
+
+              🤖 Generated with [Claude Code](https://claude.ai/code)
+
+              Co-Authored-By: Claude <noreply@anthropic.com>"
+
+              git push
+            fi
+          fi
+        if: ${{ steps.auto-fix.outputs.fixed_anything == 'true' && github.event_name == 'schedule' }}
+
+      - name: Fail on critical issues
+        run: |
+          DOC_ISSUES=${{ steps.doc-check.outputs.doc_issues }}
+          VESTIGIAL_ISSUES=${{ steps.vestigial-check.outputs.vestigial_issues }}
+
+          # Fail if there are critical documentation issues (broken links, missing files)
+          if [[ "$DOC_ISSUES" -gt 5 ]]; then
+            echo "::error::Too many documentation issues found ($DOC_ISSUES). Please fix critical issues."
+            exit 1
+          fi
+
+          # Don't fail on vestigial code issues, just warn
+          if [[ "$VESTIGIAL_ISSUES" -gt 20 ]]; then
+            echo "::warning::High amount of potentially unused code found ($VESTIGIAL_ISSUES items). Consider cleanup."
+          fi
+        if: ${{ github.event_name == 'pull_request' }}

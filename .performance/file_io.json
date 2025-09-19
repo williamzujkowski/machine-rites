@@ -1,0 +1,9 @@
+{
+        "test": "file_io",
+        "write_time_ms": 20,
+        "read_time_ms": 6,
+        "write_speed_mb_s": 500.00,
+        "read_speed_mb_s": 1666.67,
+        "test_size_mb": 10,
+        "timestamp": "2025-09-19T09:53:37-04:00"
+    }

@@ -1,0 +1,74 @@
+# Ubuntu 22.04 LTS Test Environment
+FROM ubuntu:22.04
+
+LABEL maintainer="Machine Rites CI"
+LABEL description="Ubuntu 22.04 test environment for machine-rites dotfiles"
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV CI=true
+ENV TERM=xterm-256color
+ENV SHELL=/bin/bash
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    bash \
+    sudo \
+    make \
+    shellcheck \
+    gpg \
+    pass \
+    age \
+    openssh-client \
+    build-essential \
+    python3-pip \
+    software-properties-common \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install chezmoi
+RUN sh -c "$(curl -fsLS get.chezmoi.io)" -- -b /usr/local/bin
+
+# Install pre-commit
+RUN pip3 install pre-commit
+
+# Create test user
+RUN useradd -m -s /bin/bash testuser && \
+    echo 'testuser ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+# Switch to test user
+USER testuser
+WORKDIR /home/testuser
+
+# Copy repository to workspace
+COPY --chown=testuser:testuser . /workspace
+WORKDIR /workspace
+
+# Set up Git for testing
+RUN git config --global user.email "test@example.com" && \
+    git config --global user.name "Test User" && \
+    git config --global init.defaultBranch main
+
+# Add execution permissions
+RUN chmod +x bootstrap_machine_rites.sh devtools-installer.sh
+
+# Create test script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "Starting Ubuntu 22.04 test environment..."\n\
+echo "Environment: $(lsb_release -d)"\n\
+echo "User: $(whoami)"\n\
+echo "Working directory: $(pwd)"\n\
+echo "Available tools:"\n\
+which chezmoi && chezmoi --version\n\
+which git && git --version\n\
+which make && make --version | head -1\n\
+which shellcheck && shellcheck --version | head -1\n\
+echo "Ready for testing..."\n\
+exec "$@"' > /usr/local/bin/entrypoint.sh && \
+    chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["/bin/bash"]

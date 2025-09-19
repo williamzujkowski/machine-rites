@@ -1,0 +1,35 @@
+# Debian 12 slim optimization
+FROM debian:12-slim
+
+# Single layer installation with cleanup
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    git \
+    gnupg \
+    lsb-release \
+    nodejs \
+    npm \
+    python3 \
+    python3-pip \
+    jq \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/* \
+    && rm -rf /var/tmp/* \
+    && npm cache clean --force \
+    && python3 -m pip cache purge
+
+# Create non-root user
+RUN useradd -m -s /bin/bash claude \
+    && mkdir -p /home/claude/workspace \
+    && chown -R claude:claude /home/claude
+
+USER claude
+WORKDIR /home/claude/workspace
+
+# Minimal health check
+HEALTHCHECK --interval=60s --timeout=5s --start-period=10s --retries=2 \
+    CMD node --version && python3 --version || exit 1
+
+CMD ["/bin/bash"]

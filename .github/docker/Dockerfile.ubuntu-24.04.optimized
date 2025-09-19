@@ -1,0 +1,60 @@
+# Multi-stage build for Ubuntu 24.04 optimization
+FROM ubuntu:24.04-slim as base
+
+# Install minimal required packages in single layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    git \
+    gnupg \
+    lsb-release \
+    software-properties-common \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/* \
+    && rm -rf /var/tmp/*
+
+# Development stage
+FROM base as development
+
+# Install development tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3 \
+    python3-pip \
+    nodejs \
+    npm \
+    jq \
+    unzip \
+    zip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/* \
+    && rm -rf /var/tmp/*
+
+# Install Node.js LTS efficiently
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
+    && apt-get install -y nodejs \
+    && npm cache clean --force
+
+# Production stage
+FROM base as production
+
+# Copy only necessary runtime files
+COPY --from=development /usr/bin/node /usr/bin/
+COPY --from=development /usr/bin/npm /usr/bin/
+COPY --from=development /usr/lib/node_modules /usr/lib/node_modules
+
+# Create non-root user
+RUN useradd -m -s /bin/bash claude \
+    && mkdir -p /home/claude/workspace \
+    && chown -R claude:claude /home/claude
+
+USER claude
+WORKDIR /home/claude/workspace
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD node --version || exit 1
+
+CMD ["/bin/bash"]

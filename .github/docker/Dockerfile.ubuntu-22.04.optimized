@@ -1,0 +1,43 @@
+# Alpine-based Ubuntu 22.04 optimization
+FROM alpine:3.18 as alpine-base
+
+# Install Alpine packages for Ubuntu 22.04 compatibility
+RUN apk add --no-cache \
+    bash \
+    curl \
+    git \
+    nodejs \
+    npm \
+    python3 \
+    py3-pip \
+    jq \
+    ca-certificates \
+    && npm cache clean --force
+
+# Ubuntu compatibility layer
+FROM ubuntu:22.04-slim as ubuntu-compat
+
+# Copy optimized tools from Alpine
+COPY --from=alpine-base /usr/bin/node /usr/bin/
+COPY --from=alpine-base /usr/bin/npm /usr/bin/
+COPY --from=alpine-base /usr/bin/jq /usr/bin/
+
+# Install minimal Ubuntu packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    git \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/* \
+    && rm -rf /var/tmp/*
+
+# Create user and workspace
+RUN useradd -m -s /bin/bash claude \
+    && mkdir -p /home/claude/workspace \
+    && chown -R claude:claude /home/claude
+
+USER claude
+WORKDIR /home/claude/workspace
+
+CMD ["/bin/bash"]

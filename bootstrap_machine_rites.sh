@@ -1,7 +1,49 @@
 #!/usr/bin/env bash
 # Ubuntu 24.04 — modular bash + chezmoi (sourceDir in your repo) + pass + gitleaks + pipx
 # Production-grade with all critical fixes and enhancements
+#
+# DEPRECATED: This script is now a compatibility wrapper for the new modular bootstrap system.
+# For new installations, use: bootstrap/bootstrap.sh
+# This wrapper maintains backwards compatibility while redirecting to the new system.
+#
 set -euo pipefail
+
+# Detect if we should use the new modular system
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NEW_BOOTSTRAP="$SCRIPT_DIR/bootstrap/bootstrap.sh"
+
+if [[ -x "$NEW_BOOTSTRAP" ]]; then
+    echo "⚠️  NOTICE: Redirecting to new modular bootstrap system"
+    echo "   Old script: $0"
+    echo "   New script: $NEW_BOOTSTRAP"
+    echo "   For full functionality, use the new script directly"
+    echo ""
+    echo "Starting modular bootstrap in 3 seconds..."
+    sleep 3
+
+    # Map old flags to new system
+    NEW_ARGS=()
+    for arg in "$@"; do
+        case "$arg" in
+            --unattended|-u) NEW_ARGS+=("--unattended") ;;
+            --verbose|-v) NEW_ARGS+=("--verbose") ;;
+            --skip-backup) NEW_ARGS+=("--skip-backup") ;;
+            --debug) NEW_ARGS+=("--debug") ;;
+            --help|-h) NEW_ARGS+=("--help") ;;
+            *) NEW_ARGS+=("$arg") ;;
+        esac
+    done
+
+    # Execute new bootstrap system
+    exec "$NEW_BOOTSTRAP" "${NEW_ARGS[@]}"
+fi
+
+# If new system not available, fall back to legacy implementation
+echo "⚠️  WARNING: Using legacy bootstrap implementation"
+echo "   Consider upgrading to the modular system at: bootstrap/bootstrap.sh"
+echo ""
+
+# Continue with original implementation...
 
 # ----- color codes & helpers -----
 C_G="\033[1;32m"; C_Y="\033[1;33m"; C_R="\033[1;31m"; C_B="\033[1;34m"; C_N="\033[0m"

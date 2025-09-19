@@ -1,0 +1,15 @@
+{
+        "timestamp": 1758290003650,
+        "type": "cache",
+        "total_size_gb": 2.27,
+        "directories": [
+  {
+    "path": "/home/william/.cache",
+    "size_gb": 0.92
+  },
+  {
+    "path": "/home/william/.npm",
+    "size_gb": 1.35
+  }
+]
+    }

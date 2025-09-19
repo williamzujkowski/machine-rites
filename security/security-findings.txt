@@ -1,0 +1,618 @@
+./.chezmoi/dot_bashrc.d/30-secrets.sh:_plain="${XDG_CONFIG_HOME:-$HOME/.config}/secrets.env"
+./.chezmoi/dot_bashrc.d/30-secrets.sh:    key="${line%%=*}"
+./.chezmoi/dot_bashrc.d/30-secrets.sh:    key="${key#"${key%%[![:space:]]*}"}"; key="${key%"${key##*[![:space:]]}"}"
+./.chezmoi/dot_bashrc.d/30-secrets.sh:    [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && export "$key=$val"
+./.chezmoi/dot_bashrc.d/35-ssh.sh:  local key_type="${1:-ed25519}"
+./.chezmoi/dot_bashrc.d/35-ssh.sh:  local key_file="$HOME/.ssh/id_${key_type}"
+./.github/workflows/ci.yml:          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+./.github/workflows/claude-code-review.yml:          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+./.github/workflows/claude.yml:          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+./.github/docker/README.md:- No secrets in logs or artifacts
+./memory/memory-store.json:      "value": "Docker buildx cache with content-based keys, separate caches per distro, layer optimization with mode=max, cache restoration with fallback keys.",
+./.gitignore:secrets.env
+./.gitignore:.password-store/
+./security/intrusion-detection/ids-monitor.sh:    "$HOME/.password-store"
+./security/intrusion-detection/ids-monitor.sh:            "name": "password_store",
+./security/intrusion-detection/ids-monitor.sh:            "description": "Monitor password store access",
+./security/intrusion-detection/ids-monitor.sh:                "~/.password-store"
+./security/intrusion-detection/ids-monitor.sh:            "pattern": "Failed password for .* from .* port .*",
+./security/intrusion-detection/ids-monitor.sh:    failed_attempts=$(grep "Failed password" "$log_file" | tail -100 | \
+./security/intrusion-detection/ids-monitor.sh:        if echo "$line" | grep -qi "command not allowed\|incorrect password"; then
+./security/audit/audit-logger.sh:        "secret_access": {
+./security/audit/audit-logger.sh:                "~/.password-store",
+./security/audit/audit-logger.sh:            "name": "secret_access_burst",
+./security/audit/audit-logger.sh:            "description": "Unusual secret access pattern detected",
+./security/compliance/nist-csf-mapper.sh:                            "Pass password store",
+./security/compliance/nist-csf-mapper.sh:                            "bootstrap/modules/50-secrets.sh - GPG/Pass setup",
+./security/compliance/nist-csf-mapper.sh:                            "tools/rotate-secrets.sh - Credential rotation",
+./security/compliance/nist-csf-mapper.sh:                            "GPG encryption for secrets",
+./security/compliance/nist-csf-mapper.sh:                            "Encrypted password store",
+./security/compliance/nist-csf-mapper.sh:                            "bootstrap/modules/50-secrets.sh - GPG encryption",
+./security/compliance/nist-csf-mapper.sh:                            "Gitleaks secret scanning",
+./security/compliance/nist-csf-mapper.sh:                            "tools/rotate-secrets.sh - Credential rotation",
+./security/compliance/nist-csf-mapper.sh:cp -r ~/.password-store /tmp/evidence/security/ 2>/dev/null || true
+./security/compliance/cis-benchmark.sh:                        "bootstrap/modules/50-secrets.sh - Secret data management",
+./security/compliance/cis-benchmark.sh:                        "tools/rotate-secrets.sh - Data lifecycle management",
+./security/compliance/cis-benchmark.sh:                        "Pass password store access control"
+./security/compliance/cis-benchmark.sh:                        "GPG encryption for passwords and secrets",
+./security/compliance/cis-benchmark.sh:                    "description": "Use unique passwords for all enterprise accounts",
+./security/compliance/cis-benchmark.sh:                        "tools/rotate-secrets.sh - Automated password generation",
+./security/compliance/cis-benchmark.sh:                        "Pass password manager integration",
+./security/compliance/cis-benchmark.sh:                        "tools/rotate-secrets.sh - Backup before rotation",
+./security/compliance/cis-benchmark.sh:                        "Gitleaks for secret detection",
+./security/compliance/cis-benchmark.sh:    sudo tee "$CIS_POLICIES_DIR/password-policy.json" > /dev/null << 'EOF'
+./security/compliance/cis-benchmark.sh:        "unique_passwords": true,
+./security/compliance/cis-benchmark.sh:        "password_manager_required": true,
+./security/compliance/cis-benchmark.sh:        "password_generation": "tools/rotate-secrets.sh",
+./security/compliance/cis-benchmark.sh:        "rotation": "Automated via secret rotation system"
+./security/compliance/cis-benchmark.sh:        "verify_password_length",
+./security/compliance/cis-benchmark.sh:        "password_authentication": false,
+./security/compliance/cis-benchmark.sh:    sudo tee "$CIS_REMEDIATION_DIR/enforce-password-policy.sh" > /dev/null << 'EOF'
+./security/compliance/cis-benchmark.sh:# CIS Remediation: Enforce password policy requirements
+./security/compliance/cis-benchmark.sh:# Check for plaintext password files
+./security/compliance/cis-benchmark.sh:    "$HOME/.config/secrets.env"
+./security/compliance/cis-benchmark.sh:    "$HOME/.password"
+./security/compliance/cis-benchmark.sh:        echo "WARNING: Plaintext password file found: $file"
+./security/compliance/cis-benchmark.sh:# Verify password manager setup
+./security/compliance/cis-benchmark.sh:    echo "ERROR: Pass password manager not installed"
+./security/compliance/cis-benchmark.sh:    echo "ERROR: Pass password store not initialized"
+./security/compliance/cis-benchmark.sh:# Check password rotation schedule
+./security/compliance/cis-benchmark.sh:if [[ -f "$HOME/.config/secret-rotation.conf" ]]; then
+./security/compliance/cis-benchmark.sh:    overdue_secrets=$(awk -F'|' '$2 > 0 {
+./security/compliance/cis-benchmark.sh:        last_rotation = system("stat -c %Y ~/.password-store/" $1 ".gpg 2>/dev/null || echo 0")
+./security/compliance/cis-benchmark.sh:    }' "$HOME/.config/secret-rotation.conf")
+./security/compliance/cis-benchmark.sh:    if [[ -n "$overdue_secrets" ]]; then
+./security/compliance/cis-benchmark.sh:        echo "$overdue_secrets"
+./security/compliance/cis-benchmark.sh:    if [[ -f "$HOME/.config/secrets.env" ]]; then
+./security/compliance/cis-benchmark.sh:        fail "Plaintext secrets file found (security risk)"
+./security/compliance/cis-benchmark.sh:        ok "No plaintext secrets files found"
+./security/compliance/cis-benchmark.sh:- **Data Protection:** GPG encryption, Pass password store, secure file operations
+./security/compliance/cis-benchmark.sh:        passwords|5.2)
+./security/compliance/cis-benchmark.sh:            "$CIS_REMEDIATION_DIR/enforce-password-policy.sh"
+./security/compliance/cis-benchmark.sh:            echo "  remediate [target]  - Run automated remediation (all|permissions|passwords|logging)"
+./security/security-checklist.sh:                "password_policies",
+./security/security-checklist.sh:                "secret_management",
+./security/security-checklist.sh:                "secret_scanning",
+./security/security-checklist.sh:    # Check for accounts with empty passwords
+./security/security-checklist.sh:    local empty_password_accounts
+./security/security-checklist.sh:    empty_password_accounts=$(sudo awk -F: '$2 == "" {print $1}' /etc/shadow 2>/dev/null || echo "")
+./security/security-checklist.sh:    if [[ -n "$empty_password_accounts" ]]; then
+./security/security-checklist.sh:        fail "Accounts with empty passwords found: $empty_password_accounts"
+./security/security-checklist.sh:        checks+=("{\"check\": \"user_accounts\", \"status\": \"fail\", \"severity\": \"critical\", \"details\": \"Accounts with empty passwords: $empty_password_accounts\"}")
+./security/security-checklist.sh:        ok "No accounts with empty passwords found"
+./security/security-checklist.sh:    # Check if Pass password manager is configured
+./security/security-checklist.sh:        checks+=("{\"check\": \"password_policies\", \"component\": \"pass\", \"status\": \"pass\", \"severity\": \"high\"}")
+./security/security-checklist.sh:        checks+=("{\"check\": \"password_policies\", \"component\": \"pass\", \"status\": \"fail\", \"severity\": \"critical\", \"recommendation\": \"Configure Pass password manager\"}")
+./security/security-checklist.sh:    # Check for plaintext password storage
+./security/security-checklist.sh:        "$HOME/.config/secrets.env"
+./security/security-checklist.sh:        "$HOME/.password"
+./security/security-checklist.sh:        "/etc/secrets"
+./security/security-checklist.sh:            fail "Plaintext password file found: $file"
+./security/security-checklist.sh:            checks+=("{\"check\": \"password_policies\", \"file\": \"$file\", \"status\": \"fail\", \"severity\": \"critical\", \"details\": \"Plaintext password storage\"}")
+./security/security-checklist.sh:        ok "No plaintext password files found"
+./security/security-checklist.sh:        checks+=("{\"check\": \"password_policies\", \"status\": \"pass\", \"severity\": \"high\"}")
+./security/security-checklist.sh:        local secret_keys
+./security/security-checklist.sh:        secret_keys=$(gpg --list-secret-keys --with-colons 2>/dev/null | grep -c '^sec:' || echo "0")
+./security/security-checklist.sh:        if [[ $secret_keys -gt 0 ]]; then
+./security/security-checklist.sh:            ok "GPG secret keys configured ($secret_keys keys)"
+./security/security-checklist.sh:            checks+=("{\"check\": \"key_management\", \"component\": \"gpg\", \"status\": \"pass\", \"severity\": \"high\", \"key_count\": $secret_keys}")
+./security/security-checklist.sh:            fail "No GPG secret keys found"
+./security/security-checklist.sh:            ok "No passwordless sudo entries found"
+./security/security-checklist.sh:    # Check password store encryption
+./security/security-checklist.sh:    if [[ -d "$HOME/.password-store" ]]; then
+./security/security-checklist.sh:        encrypted_files=$(find "$HOME/.password-store" -name "*.gpg" | wc -l)
+./security/security-checklist.sh:            checks+=("{\"check\": \"encryption_at_rest\", \"component\": \"password_store\", \"status\": \"pass\", \"severity\": \"critical\", \"encrypted_files\": $encrypted_files}")
+./security/security-checklist.sh:            checks+=("{\"check\": \"encryption_at_rest\", \"component\": \"password_store\", \"status\": \"fail\", \"severity\": \"critical\", \"details\": \"No encrypted files in password store\"}")
+./security/security-checklist.sh:        checks+=("{\"check\": \"encryption_at_rest\", \"component\": \"password_store\", \"status\": \"fail\", \"severity\": \"high\", \"details\": \"Password store not configured\"}")
+./security/security-checklist.sh:    # Check for secret rotation system
+./security/security-checklist.sh:    if [[ -f "/home/william/git/machine-rites/tools/rotate-secrets.sh" ]]; then
+./security/security-checklist.sh:        checks+=("{\"check\": \"secret_management\", \"component\": \"rotation\", \"status\": \"pass\", \"severity\": \"high\"}")
+./security/security-checklist.sh:        checks+=("{\"check\": \"secret_management\", \"component\": \"rotation\", \"status\": \"fail\", \"severity\": \"high\", \"recommendation\": \"Implement secret rotation\"}")
+./security/security-checklist.sh:    # Check for secret scanning
+./security/security-checklist.sh:        checks+=("{\"check\": \"secret_management\", \"component\": \"scanning\", \"status\": \"pass\", \"severity\": \"high\"}")
+./security/security-checklist.sh:        checks+=("{\"check\": \"secret_management\", \"component\": \"scanning\", \"status\": \"fail\", \"severity\": \"high\", \"recommendation\": \"Configure gitleaks secret scanning\"}")
+./security/security-checklist.sh:            ok "No secrets detected by gitleaks"
+./security/security-checklist.sh:            local secret_count
+./security/security-checklist.sh:            secret_count=$(echo "$gitleaks_output" | grep -c "Secret" || echo "0")
+./security/security-checklist.sh:            if [[ $secret_count -gt 0 ]]; then
+./security/security-checklist.sh:                fail "Secrets detected in code: $secret_count"
+./security/security-checklist.sh:                vulnerabilities+=("{\"type\": \"secret_exposure\", \"severity\": \"critical\", \"count\": $secret_count, \"tool\": \"gitleaks\"}")
+./security/security-checklist.sh:        warn "Gitleaks not available for secret scanning"
+./security/security-checklist.sh:        vulnerabilities+=("{\"type\": \"missing_tool\", \"severity\": \"medium\", \"tool\": \"gitleaks\", \"recommendation\": \"Install gitleaks for secret scanning\"}")
+./security/gpg-backup-restore.sh:    key_config=$(mktemp)
+./security/gpg-backup-restore.sh:            "includes": ["public_keys", "secret_keys", "trust_db", "configuration"]
+./security/gpg-backup-restore.sh:        "secrets_only": {
+./security/gpg-backup-restore.sh:            "includes": ["secret_keys"]
+./security/gpg-backup-restore.sh:# Args: $1 - backup type (full|secrets_only|public_only), $2 - destination (optional)
+./security/gpg-backup-restore.sh:        full|secrets_only|public_only) ;;
+./security/gpg-backup-restore.sh:        secrets_only)
+./security/gpg-backup-restore.sh:            export_secret_keys_only "$temp_backup_dir"
+./security/gpg-backup-restore.sh:    # Create paper backup if enabled and type is full or secrets_only
+./security/gpg-backup-restore.sh:    if [[ "$backup_type" == "full" ]] || [[ "$backup_type" == "secrets_only" ]]; then
+./security/gpg-backup-restore.sh:    # Export all secret keys
+./security/gpg-backup-restore.sh:    gpg --export-secret-keys --armor > "$dest_dir/secret-keys.asc"
+./security/gpg-backup-restore.sh:    gpg --list-secret-keys --with-colons > "$dest_dir/secret-key-list.txt"
+./security/gpg-backup-restore.sh:# Function: export_secret_keys_only
+./security/gpg-backup-restore.sh:# Purpose: Export only secret keys
+./security/gpg-backup-restore.sh:export_secret_keys_only() {
+./security/gpg-backup-restore.sh:    info "Exporting secret keys only"
+./security/gpg-backup-restore.sh:    # Export all secret keys
+./security/gpg-backup-restore.sh:    gpg --export-secret-keys --armor > "$dest_dir/secret-keys.asc"
+./security/gpg-backup-restore.sh:    # Export list of secret keys
+./security/gpg-backup-restore.sh:    gpg --list-secret-keys --with-colons > "$dest_dir/secret-key-list.txt"
+./security/gpg-backup-restore.sh:    public_keys="$(gpg --list-keys --with-colons | grep -c '^pub:' || echo '0')"
+./security/gpg-backup-restore.sh:    local secret_keys
+./security/gpg-backup-restore.sh:    secret_keys="$(gpg --list-secret-keys --with-colons | grep -c '^sec:' || echo '0')"
+./security/gpg-backup-restore.sh:        "secret_keys": $secret_keys,
+./security/gpg-backup-restore.sh:        "total_keys": $((public_keys + secret_keys))
+./security/gpg-backup-restore.sh:        "secret_keys": $([ -f "$backup_dir/secret-keys.asc" ] && echo "true" || echo "false"),
+./security/gpg-backup-restore.sh:    # Create QR codes for secret keys if qrencode is available
+./security/gpg-backup-restore.sh:    if command -v qrencode >/dev/null 2>&1 && [[ -f "$backup_dir/secret-keys.asc" ]]; then
+./security/gpg-backup-restore.sh:        info "Generating QR codes for secret keys"
+./security/gpg-backup-restore.sh:        split -b 2048 "$backup_dir/secret-keys.asc" "$paper_dir/secret-keys-part-"
+./security/gpg-backup-restore.sh:        for part_file in "$paper_dir"/secret-keys-part-*; do
+./security/gpg-backup-restore.sh:                qrencode -o "$paper_dir/secret-keys-qr-${part_number}.png" \
+./security/gpg-backup-restore.sh:3. Save as secret-keys.asc
+./security/gpg-backup-restore.sh:4. Import with: gpg --import secret-keys.asc
+./security/gpg-backup-restore.sh:        if [[ -f "$backup_dir/secret-keys.asc" ]]; then
+./security/gpg-backup-restore.sh:            sudo cp "$backup_dir/secret-keys.asc" "$paper_dir/"
+./security/gpg-backup-restore.sh:            sudo chmod 600 "$paper_dir/secret-keys.asc"
+./security/gpg-backup-restore.sh:                key_count="$(jq -r '.key_statistics.total_keys' "$extracted_dir/backup-metadata.json")"
+./security/gpg-backup-restore.sh:# Args: $1 - backup file path, $2 - restore type (full|secrets_only|public_only)
+./security/gpg-backup-restore.sh:        secrets_only)
+./security/gpg-backup-restore.sh:            restore_secret_keys_only "$extracted_dir"
+./security/gpg-backup-restore.sh:    # Import secret keys
+./security/gpg-backup-restore.sh:    if [[ -f "$backup_dir/secret-keys.asc" ]]; then
+./security/gpg-backup-restore.sh:        info "Importing secret keys"
+./security/gpg-backup-restore.sh:        if gpg --import "$backup_dir/secret-keys.asc"; then
+./security/gpg-backup-restore.sh:            warn "Some secret keys may have failed to import"
+./security/gpg-backup-restore.sh:# Function: restore_secret_keys_only
+./security/gpg-backup-restore.sh:# Purpose: Restore only secret keys from backup
+./security/gpg-backup-restore.sh:restore_secret_keys_only() {
+./security/gpg-backup-restore.sh:    info "Restoring secret keys only"
+./security/gpg-backup-restore.sh:    if [[ -f "$backup_dir/secret-keys.asc" ]]; then
+./security/gpg-backup-restore.sh:        if gpg --import "$backup_dir/secret-keys.asc"; then
+./security/gpg-backup-restore.sh:            warn "Some secret keys may have failed to import"
+./security/gpg-backup-restore.sh:            echo "  backup [type] [destination]    - Create GPG backup (full|secrets_only|public_only)"
+./security/gpg-backup-restore.sh:            echo "  restore <file> [type]          - Restore from backup (full|secrets_only|public_only)"
+./security/gpg-backup-restore.sh:            echo "  $0 backup secrets_only /media/usb"
+./CLAUDE.md:- **Environment Safety**: Never hardcode secrets
+./project-plan.md:│   ├── 50-secrets.sh           # GPG/Pass setup
+./project-plan.md:- [ ] Implement secret rotation tool
+./README.md:- **🔒 GPG-encrypted secrets** — Pass integration with automatic migration from plaintext
+./README.md:│   ├── 30-secrets.sh            # Pass/GPG secrets management
+./README.md:    ├── .gitleaks.toml           # Custom secret patterns
+./README.md:make secrets-add KEY=github_token  # Add secret
+./README.md:make secrets-list                   # List all secrets
+./README.md:make secrets-backup                 # Encrypted backup
+./README.md:# ~/.config/secrets.env → pass (GPG-encrypted)
+./README.md:# Add new secret
+./README.md:* **Gitleaks:** Scans for secrets before commit
+./README.md:gpg --list-secret-keys
+./README.md:  ✓ No secrets detected
+./README.md:* [Pass: The Standard Unix Password Manager](https://passwordstore.org)
+./.claude/agents/documentation/api-docs/docs-api-openapi.md:    - "secrets/**"
+./.claude/agents/github/multi-repo-swarm.md:    secret: process.env.WEBHOOK_SECRET
+./.claude/agents/github/github-modes.md:- **Tools**: gh search code, gh issue create, gh secret list, Read, Write
+./.claude/agents/github/release-swarm.md:        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+./.claude/agents/github/release-swarm.md:  --check-secrets \
+./.claude/agents/github/workflow-automation.md:- Store swarm configs in secrets
+./.claude/agents/github/code-review-swarm.md:  --check "owasp,cve,secrets,permissions" \
+./.claude/agents/github/code-review-swarm.md:      - no-hardcoded-secrets
+./.claude/agents/github/code-review-swarm.md:        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+./.claude/agents/devops/ci-cd/ops-cicd-github.md:    - "secrets/**"
+./.claude/agents/devops/ci-cd/ops-cicd-github.md:    - "secret management changes"
+./.claude/agents/devops/ci-cd/ops-cicd-github.md:- Implement proper secret management
+./.claude/agents/devops/ci-cd/ops-cicd-github.md:- Never hardcode secrets
+./.claude/agents/sparc/specification.md:      3. "User enters email and password"
+./.claude/agents/sparc/specification.md:      - "Weak password: Show requirements"
+./.claude/agents/sparc/specification.md:  Scenario: Failed login - wrong password
+./.claude/agents/sparc/specification.md:    And I enter wrong password
+./.claude/agents/sparc/specification.md:- FR-2.1.1: Support email/password login
+./.claude/agents/sparc/specification.md:      - passwordHash: string (required)
+./.claude/agents/sparc/specification.md:              required: [email, password]
+./.claude/agents/sparc/specification.md:                password:
+./.claude/agents/sparc/refinement.md:        password: 'SecurePass123!'
+./.claude/agents/sparc/refinement.md:        passwordHash: await hash(credentials.password)
+./.claude/agents/sparc/refinement.md:        password: 'WrongPassword'
+./.claude/agents/sparc/refinement.md:    const { email, password } = credentials;
+./.claude/agents/sparc/refinement.md:    // Verify password
+./.claude/agents/sparc/refinement.md:      password,
+./.claude/agents/sparc/refinement.md:      user.passwordHash
+./.claude/agents/sparc/refinement.md:    if (!user || !await this.verifyPassword(credentials.password, user.passwordHash)) {
+./.claude/agents/sparc/refinement.md:        password: 'password'
+./.claude/agents/sparc/architecture.md:    password_hash VARCHAR(255) NOT NULL,
+./.claude/agents/sparc/architecture.md:              required: [email, password]
+./.claude/agents/sparc/architecture.md:                password:
+./.claude/agents/sparc/architecture.md:            secretKeyRef:
+./.claude/agents/sparc/architecture.md:              name: db-secret
+./.claude/agents/sparc/pseudocode.md:INPUT: email (string), password (string)
+./.claude/agents/sparc/pseudocode.md:    IF email is empty OR password is empty THEN
+./.claude/agents/sparc/pseudocode.md:    // Verify password
+./.claude/agents/sparc/pseudocode.md:    isValid ← PasswordHasher.verify(password, user.passwordHash)
+./.claude/agents/sparc/pseudocode.md:        // Email/password logic
+./.claude/agents/consensus/security-manager.md:    // Phase 1: Each party generates secret polynomial
+./.claude/agents/consensus/security-manager.md:    const secretPolynomial = this.generateSecretPolynomial();
+./.claude/agents/consensus/security-manager.md:    const commitments = this.generateCommitments(secretPolynomial);
+./.claude/agents/consensus/security-manager.md:    // Phase 3: Share secret values
+./.claude/agents/consensus/security-manager.md:    const secretShares = this.generateSecretShares(secretPolynomial);
+./.claude/agents/consensus/security-manager.md:    await this.distributeSecretShares(secretShares);
+./.claude/agents/consensus/security-manager.md:  async proveDiscreteLog(secret, publicKey, challenge = null) {
+./.claude/agents/consensus/security-manager.md:    const response = (nonce + c * secret) % this.curve.order;
+./.claude/agents/consensus/security-manager.md:    this.keyStore = new EncryptedKeyStore();
+./.claude/agents/consensus/security-manager.md:    const keyShares = await dkgProtocol.generateKeyShares(masterKey, participants);
+./.claude/agents/consensus/security-manager.md:    // Generate new key using proactive secret sharing
+./.claude/agents/consensus/security-manager.md:    // Encrypt backup shares with different passwords
+./.claude/agents/consensus/security-manager.md:        encryptedShare: await this.encryptBackupShare(share, `password_${index}`),
+./.claude/agents/consensus/security-manager.md:  async recoverFromBackup(backupIds, passwords) {
+./.claude/agents/consensus/security-manager.md:        passwords[i]
+./.claude/agents/data/ml/data-ml-model.md:    - "secrets/**"
+./.claude/agents/templates/orchestrator-task.md:"Orchestrate the development of a user authentication system with email verification, password reset, and 2FA"
+./.claude/agents/templates/implementer-sparc-coder.md: * @param {string} credentials.password - User password
+./.claude/agents/testing/validation/production-validator.md:      password: process.env.REDIS_PASSWORD
+./.claude/agents/testing/validation/production-validator.md:  const missing = required.filter(key => !process.env[key]);
+./.claude/agents/testing/unit/tdd-london-swarm.md:    input: { email: 'string', password: 'string' },
+./.claude/agents/swarm/mesh-coordinator.md:        winner = max(evaluated_bids, key=lambda x: x[1])
+./.claude/agents/core/coder.md:- Never hardcode secrets
+./.claude/agents/core/reviewer.md:console.log('User password:', user.password);
+./.claude/agents/core/tester.md:    await page.fill('[name="password"]', 'SecurePass123!');
+./.claude/agents/flow-nexus/authentication.md:- Implement password reset and email verification flows
+./.claude/agents/flow-nexus/authentication.md:  password: "secure_password",
+./.claude/agents/flow-nexus/authentication.md:  password: "password"
+./.claude/agents/flow-nexus/authentication.md:mcp__flow-nexus__user_reset_password({ email: "user@example.com" })
+./.claude/agents/flow-nexus/authentication.md:mcp__flow-nexus__user_update_password({
+./.claude/agents/flow-nexus/authentication.md:  new_password: "new_password"
+./.claude/agents/flow-nexus/authentication.md:- Provide secure password reset flows
+./.claude/commands/github/multi-repo-swarm.md:    secret: process.env.WEBHOOK_SECRET
+./.claude/commands/github/github-modes.md:- **Tools**: gh search code, gh issue create, gh secret list, Read, Write
+./.claude/commands/github/release-swarm.md:        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+./.claude/commands/github/release-swarm.md:  --check-secrets \
+./.claude/commands/github/workflow-automation.md:- Store swarm configs in secrets
+./.claude/commands/github/code-review-swarm.md:  --check "owasp,cve,secrets,permissions" \
+./.claude/commands/github/code-review-swarm.md:      - no-hardcoded-secrets
+./.claude/commands/github/code-review-swarm.md:        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+./.claude/commands/flow-nexus/login-registration.md:  password: "secure_password",
+./.claude/commands/flow-nexus/login-registration.md:  password: "your_password"
+./.claude/commands/flow-nexus/login-registration.md:mcp__flow-nexus__user_reset_password({ email: "user@example.com" })
+./.claude/commands/flow-nexus/login-registration.md:mcp__flow-nexus__user_update_password({
+./.claude/commands/flow-nexus/login-registration.md:  new_password: "new_secure_password"
+./bootstrap/bootstrap.sh.original:    "50-secrets"
+./bootstrap/bootstrap.sh.original:    echo "  3. Set up secrets: pass insert personal/github_token"
+./bootstrap/modules/40-shell-config.sh:    _create_secrets_config
+./bootstrap/modules/40-shell-config.sh:        "$HOME/.bashrc.d/30-secrets.sh"
+./bootstrap/modules/40-shell-config.sh:# Internal function: _create_secrets_config
+./bootstrap/modules/40-shell-config.sh:# Purpose: Create secrets management configuration
+./bootstrap/modules/40-shell-config.sh:_create_secrets_config() {
+./bootstrap/modules/40-shell-config.sh:    write_atomic "$HOME/.bashrc.d/30-secrets.sh" <<'EOF'
+./bootstrap/modules/40-shell-config.sh:_plain="${XDG_CONFIG_HOME:-$HOME/.config}/secrets.env"
+./bootstrap/modules/40-shell-config.sh:    key="${line%%=*}"
+./bootstrap/modules/40-shell-config.sh:    key="${key#"${key%%[![:space:]]*}"}"; key="${key%"${key##*[![:space:]]}"}"
+./bootstrap/modules/40-shell-config.sh:    [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && export "$key=$val"
+./bootstrap/modules/40-shell-config.sh:  local key_type="${1:-ed25519}"
+./bootstrap/modules/40-shell-config.sh:  local key_file="$HOME/.ssh/id_${key_type}"
+./bootstrap/modules/30-chezmoi.sh:        ".config/secrets.env"
+./bootstrap/modules/20-system-packages.sh:            warn "sudo may prompt for password during package installation"
+./bootstrap/modules/60-devtools.sh:regex = '''(?i)(api[_-]?key|apikey)['""]?\s*[:=]\s*['""]?([a-z0-9]{32,})'''
+./bootstrap/modules/60-devtools.sh:id = "custom-secret-key"
+./bootstrap/modules/60-devtools.sh:regex = '''(?i)(secret[_-]?key|secretkey)['""]?\s*[:=]\s*['""]?([a-z0-9]{32,})'''
+./bootstrap/modules/60-devtools.sh:id = "custom-password"
+./bootstrap/modules/60-devtools.sh:regex = '''(?i)(password|passwd|pwd)['""]?\s*[:=]\s*['""]?([a-z0-9]{8,})'''
+./bootstrap/modules/60-devtools.sh:  '''test_password_123''',
+./bootstrap/modules/60-devtools.sh:  '''fake_secret_key''',
+./bootstrap/modules/60-devtools.sh:if gpg --list-secret-keys 2>/dev/null | grep -q '^sec'; then
+./bootstrap/modules/60-devtools.sh:  keys=$(gpg --list-secret-keys --keyid-format SHORT 2>/dev/null | grep '^sec' | wc -l)
+./bootstrap/modules/60-devtools.sh:  warn "No GPG secret keys (pass won't work)"
+./bootstrap/modules/60-devtools.sh:  [[ -f "$key" ]] && { ok "Key: $(basename "$key")"; found=1; }
+./bootstrap/modules/60-devtools.sh:  ok "No secrets detected"
+./bootstrap/modules/60-devtools.sh:pass_dir="${PASSWORD_STORE_DIR:-$HOME/.password-store}"
+./bootstrap/modules/60-devtools.sh:echo "Restore: gpg -d $backup_file | tar xzf - -C ~/.password-store"
+./bootstrap/modules/60-devtools.sh:          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+./bootstrap/modules/10-backup.sh:        "${XDG_CONFIG_HOME:-$HOME/.config}/secrets.env"
+./bootstrap/modules/50-secrets.sh:# bootstrap/modules/50-secrets.sh - GPG and Pass setup module
+./bootstrap/modules/50-secrets.sh:# Description: Sets up GPG keys and Pass password manager
+./bootstrap/modules/50-secrets.sh:# This module sets up GPG keys for encryption and initializes Pass password
+./bootstrap/modules/50-secrets.sh:# manager for secure secret storage. It also handles migration from plaintext
+./bootstrap/modules/50-secrets.sh:# secrets to Pass.
+./bootstrap/modules/50-secrets.sh:readonly MODULE_NAME="50-secrets"
+./bootstrap/modules/50-secrets.sh:    # Migrate plaintext secrets to Pass
+./bootstrap/modules/50-secrets.sh:    _migrate_plaintext_secrets
+./bootstrap/modules/50-secrets.sh:    # Check GPG has secret keys
+./bootstrap/modules/50-secrets.sh:    if ! gpg --list-secret-keys --with-colons 2>/dev/null | grep -q '^sec:'; then
+./bootstrap/modules/50-secrets.sh:        warn "No GPG secret keys found"
+./bootstrap/modules/50-secrets.sh:    warn "  - GPG keys: gpg --delete-secret-keys <KEY_ID>"
+./bootstrap/modules/50-secrets.sh:    warn "  - Pass store: rm -rf ~/.password-store"
+./bootstrap/modules/50-secrets.sh:    # Check if we already have secret keys
+./bootstrap/modules/50-secrets.sh:    if gpg --list-secret-keys --with-colons 2>/dev/null | grep -q '^sec:'; then
+./bootstrap/modules/50-secrets.sh:        info "GPG secret key already exists"
+./bootstrap/modules/50-secrets.sh:        key_info=$(gpg --list-secret-keys --with-colons 2>/dev/null | awk -F: '/^sec:/ {print $5; exit}')
+./bootstrap/modules/50-secrets.sh:        key_info=$(gpg --list-secret-keys --with-colons 2>/dev/null | awk -F: '/^sec:/ {print $5; exit}')
+./bootstrap/modules/50-secrets.sh:# Purpose: Initialize Pass password store
+./bootstrap/modules/50-secrets.sh:    info "Initializing Pass password store"
+./bootstrap/modules/50-secrets.sh:    gpg_key=$(gpg --list-secret-keys --with-colons 2>/dev/null | awk -F: '/^sec:/ {print $5; exit}')
+./bootstrap/modules/50-secrets.sh:# Internal function: _migrate_plaintext_secrets
+./bootstrap/modules/50-secrets.sh:# Purpose: Migrate plaintext secrets to Pass
+./bootstrap/modules/50-secrets.sh:_migrate_plaintext_secrets() {
+./bootstrap/modules/50-secrets.sh:    local secrets_file="$XDG_CONFIG_HOME/secrets.env"
+./bootstrap/modules/50-secrets.sh:    if [[ ! -f "$secrets_file" ]]; then
+./bootstrap/modules/50-secrets.sh:        info "No plaintext secrets file found, skipping migration"
+./bootstrap/modules/50-secrets.sh:        warn "Pass not initialized, cannot migrate secrets"
+./bootstrap/modules/50-secrets.sh:    info "Migrating plaintext secrets to Pass"
+./bootstrap/modules/50-secrets.sh:        local key="${line%%=*}"
+./bootstrap/modules/50-secrets.sh:        key="${key#"${key%%[![:space:]]*}"}"; key="${key%"${key##*[![:space:]]}"}"
+./bootstrap/modules/50-secrets.sh:        if [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+./bootstrap/modules/50-secrets.sh:            lowercase_key=$(printf '%s' "$key" | tr '[:upper:]' '[:lower:]')
+./bootstrap/modules/50-secrets.sh:                info "Migrated secret: $key -> $pass_entry"
+./bootstrap/modules/50-secrets.sh:                warn "Failed to migrate secret: $key"
+./bootstrap/modules/50-secrets.sh:    done < "$secrets_file"
+./bootstrap/modules/50-secrets.sh:        say "Migrated $migrated_count secrets to Pass"
+./bootstrap/modules/50-secrets.sh:            warn "$failed_count secrets failed to migrate"
+./bootstrap/modules/50-secrets.sh:        _offer_plaintext_cleanup "$secrets_file"
+./bootstrap/modules/50-secrets.sh:        info "No secrets migrated"
+./bootstrap/modules/50-secrets.sh:# Purpose: Offer to securely remove plaintext secrets file
+./bootstrap/modules/50-secrets.sh:# Args: $1 - Path to plaintext secrets file
+./bootstrap/modules/50-secrets.sh:    local secrets_file="$1"
+./bootstrap/modules/50-secrets.sh:        warn "Plaintext secrets have been migrated to Pass"
+./bootstrap/modules/50-secrets.sh:        read -rp "Securely delete plaintext secrets file? [y/N] " -n 1 -r
+./bootstrap/modules/50-secrets.sh:                if shred -u "$secrets_file"; then
+./bootstrap/modules/50-secrets.sh:                    say "Plaintext secrets file securely deleted"
+./bootstrap/modules/50-secrets.sh:                    warn "Failed to securely delete plaintext secrets file"
+./bootstrap/modules/50-secrets.sh:                if rm -f "$secrets_file"; then
+./bootstrap/modules/50-secrets.sh:                    say "Plaintext secrets file deleted (shred not available)"
+./bootstrap/modules/50-secrets.sh:                    warn "Failed to delete plaintext secrets file"
+./bootstrap/modules/50-secrets.sh:            info "Plaintext secrets file preserved at: $secrets_file"
+./bootstrap/modules/50-secrets.sh:        info "In unattended mode - plaintext secrets file preserved"
+./bootstrap/modules/50-secrets.sh:        info "Location: $secrets_file"
+./docs/visual-architecture.md:│  ├── 30-secrets.sh      (Secret management)                    │
+./docs/user-guide.md:4. [Secret Management](#secret-management)
+./docs/user-guide.md:├── 30-secrets.sh          # Secret management
+./docs/user-guide.md:make secrets-add KEY=github_token
+./docs/user-guide.md:Organize secrets hierarchically:
+./docs/user-guide.md:└── aws_secret_key
+./docs/user-guide.md:└── vpn_password
+./docs/user-guide.md:├── wifi_password
+./docs/user-guide.md:make secrets-backup
+./docs/user-guide.md:gpg --list-secret-keys
+./docs/user-guide.md:# If "password store is empty":
+./docs/troubleshooting.md:| Environment vars missing | Secrets not loaded | `source ~/.bashrc.d/30-secrets.sh` |
+./docs/troubleshooting.md:$ gpg --list-secret-keys
+./docs/troubleshooting.md:gpg --list-secret-keys
+./docs/troubleshooting.md:Error: password store is empty. Try "pass init".
+./docs/troubleshooting.md:GPG_KEY=$(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2 | head -1)
+./docs/troubleshooting.md:$ source ~/.bashrc.d/30-secrets.sh
+./docs/troubleshooting.md:Error: Failed to migrate secrets from ~/.config/secrets.env
+./docs/troubleshooting.md:cat ~/.config/secrets.env
+./docs/troubleshooting.md:    [[ "$key" =~ ^[[:space:]]*# ]] && continue  # Skip comments
+./docs/troubleshooting.md:done < ~/.config/secrets.env
+./docs/troubleshooting.md:# Check if secrets loaded
+./docs/troubleshooting.md:source ~/.bashrc.d/30-secrets.sh
+./docs/troubleshooting.md:# Reset secrets only
+./docs/troubleshooting.md:source ~/.bashrc.d/30-secrets.sh
+./docs/architecture-decisions.md:Use `pass` (passwordstore.org) for secret management:
+./docs/architecture-decisions.md:- Gitleaks for secret detection
+./docs/bootstrap-architecture.md:    ├── 50-secrets.sh           # GPG and Pass setup
+./docs/bootstrap-architecture.md:### 50-secrets.sh (Secrets Management)
+./docs/bootstrap-architecture.md:- **Purpose**: Set up GPG keys and Pass password manager
+./docs/bootstrap-architecture.md:  - Plaintext secrets migration
+./docs/bootstrap-architecture.md:✓ 50-secrets.sh - OK
+./docs/code_review_report.md:- **File**: `.chezmoi/dot_bashrc.d/30-secrets.sh`
+./docs/code_review_report.md:- **Issue**: Plaintext secrets fallback mechanism
+./docs/code_review_report.md:- **Fix**: Implement proper secret scanning and migration warnings
+./docs/code_review_report.md:1. **Credential Handling**: Plaintext fallback in secrets management
+./docs/code_review_report.md:├── src/modules/secrets_setup.sh
+./docs/code_review_report.md:- Implement proper secret scanning
+./docs/code_review_report.md:    ├── test_secrets_handling.sh
+./tools/backup-pass.sh:pass_dir="${PASSWORD_STORE_DIR:-$HOME/.password-store}"
+./tools/backup-pass.sh:echo "Restore: gpg -d $backup_file | tar xzf - -C ~/.password-store"
+./tools/doctor.sh:if gpg --list-secret-keys 2>/dev/null | grep -q '^sec'; then
+./tools/doctor.sh:  keys=$(gpg --list-secret-keys --keyid-format SHORT 2>/dev/null | grep '^sec' | wc -l)
+./tools/doctor.sh:  warn "No GPG secret keys (pass won't work)"
+./tools/doctor.sh:  [[ -f "$key" ]] && { ok "Key: $(basename "$key")"; found=1; }
+./tools/doctor.sh:  ok "No secrets detected"
+./tools/rotate-secrets.sh:# tools/rotate-secrets.sh - Automated secret rotation system
+./tools/rotate-secrets.sh:# Description: Secure secret rotation with audit logging and rollback capability
+./tools/rotate-secrets.sh:#   - Automated password generation with configurable complexity
+./tools/rotate-secrets.sh:readonly ROTATION_LOG="/var/log/secret-rotation.log"
+./tools/rotate-secrets.sh:readonly BACKUP_DIR="${PASSWORD_STORE_DIR:-$HOME/.password-store}/backups"
+./tools/rotate-secrets.sh:readonly CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/secret-rotation.conf"
+./tools/rotate-secrets.sh:readonly LOCK_FILE="/tmp/secret-rotation.lock"
+./tools/rotate-secrets.sh:USAGE: rotate-secrets.sh [OPTIONS] [COMMAND] [SECRETS...]
+./tools/rotate-secrets.sh:    Automated secret rotation system with security audit logging
+./tools/rotate-secrets.sh:    rotate [secrets...]  Rotate specified secrets (default: all configured)
+./tools/rotate-secrets.sh:    backup              Create backup of current secrets
+./tools/rotate-secrets.sh:    list                List all managed secrets
+./tools/rotate-secrets.sh:    verify              Verify secret integrity and accessibility
+./tools/rotate-secrets.sh:    rotate-secrets.sh rotate github_token ssh_key
+./tools/rotate-secrets.sh:    rotate-secrets.sh --dry-run rotate
+./tools/rotate-secrets.sh:    rotate-secrets.sh backup
+./tools/rotate-secrets.sh:    rotate-secrets.sh restore 2024-01-15_14-30-22
+./tools/rotate-secrets.sh:    - Integration with external secret stores
+./tools/rotate-secrets.sh:# Purpose: Initialize the secret rotation system
+./tools/rotate-secrets.sh:    info "Initializing secret rotation system"
+./tools/rotate-secrets.sh:# Database passwords (rotate every 30 days)
+./tools/rotate-secrets.sh:db/postgres_admin|30|high|update_postgres_password
+./tools/rotate-secrets.sh:db/mysql_root|30|high|update_mysql_password
+./tools/rotate-secrets.sh:# Service passwords (rotate every 45 days)
+./tools/rotate-secrets.sh:service/monitoring|45|medium|update_monitoring_password
+./tools/rotate-secrets.sh:service/backup|45|medium|update_backup_password
+./tools/rotate-secrets.sh:# Purpose: Verify system prerequisites for secret rotation
+./tools/rotate-secrets.sh:        die "Pass password store not initialized"
+./tools/rotate-secrets.sh:    if ! gpg --list-secret-keys >/dev/null 2>&1; then
+./tools/rotate-secrets.sh:        die "No GPG secret keys available"
+./tools/rotate-secrets.sh:# Function: generate_secure_password
+./tools/rotate-secrets.sh:# Purpose: Generate cryptographically secure password
+./tools/rotate-secrets.sh:generate_secure_password() {
+./tools/rotate-secrets.sh:    validate_numeric "$length" "$MIN_LENGTH" "$MAX_LENGTH" || die "Invalid password length: $length"
+./tools/rotate-secrets.sh:# Args: $1 - event, $2 - secret, $3 - status, $4 - details (optional)
+./tools/rotate-secrets.sh:    local secret="$2"
+./tools/rotate-secrets.sh:    local log_entry="${timestamp}|${event}|${secret}|${status}|${details}"
+./tools/rotate-secrets.sh:    logger -p auth.info "SECRET_ROTATION: $event $secret $status"
+./tools/rotate-secrets.sh:# Purpose: Create encrypted backup of secrets before rotation
+./tools/rotate-secrets.sh:    local backup_name="secrets_backup_${backup_timestamp}"
+./tools/rotate-secrets.sh:    # Copy password store to temporary location
+./tools/rotate-secrets.sh:    cp -r "${PASSWORD_STORE_DIR:-$HOME/.password-store}" "$temp_backup_dir/password-store"
+./tools/rotate-secrets.sh:    "gpg_keys": $(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ {print $5}' | jq -R . | jq -s .)
+./tools/rotate-secrets.sh:# Function: rotate_secret
+./tools/rotate-secrets.sh:# Purpose: Rotate a single secret with rollback capability
+./tools/rotate-secrets.sh:# Args: $1 - secret name, $2 - force flag (optional)
+./tools/rotate-secrets.sh:rotate_secret() {
+./tools/rotate-secrets.sh:    local secret_name="$1"
+./tools/rotate-secrets.sh:    # Validate secret name
+./tools/rotate-secrets.sh:    validate_shell_identifier "$(basename "$secret_name")" || die "Invalid secret name: $secret_name"
+./tools/rotate-secrets.sh:    # Check if secret exists
+./tools/rotate-secrets.sh:    if ! pass show "$secret_name" >/dev/null 2>&1; then
+./tools/rotate-secrets.sh:        warn "Secret does not exist: $secret_name"
+./tools/rotate-secrets.sh:    # Get configuration for this secret
+./tools/rotate-secrets.sh:    config_line="$(grep "^${secret_name}|" "$CONFIG_FILE" 2>/dev/null || true)"
+./tools/rotate-secrets.sh:        warn "No configuration found for secret: $secret_name"
+./tools/rotate-secrets.sh:    IFS='|' read -r secret_path interval complexity update_cmd <<< "$config_line"
+./tools/rotate-secrets.sh:        last_rotation="$(pass show "$secret_name.metadata" 2>/dev/null | grep "last_rotation:" | cut -d: -f2 | tr -d ' ' || echo "1970-01-01")"
+./tools/rotate-secrets.sh:            info "Secret $secret_name not due for rotation ($days_since_rotation/$interval days)"
+./tools/rotate-secrets.sh:    info "Rotating secret: $secret_name"
+./tools/rotate-secrets.sh:    # Backup current secret
+./tools/rotate-secrets.sh:    local old_secret
+./tools/rotate-secrets.sh:    old_secret="$(pass show "$secret_name")"
+./tools/rotate-secrets.sh:    local backup_entry="${secret_name}.backup.$(date +%Y%m%d_%H%M%S)"
+./tools/rotate-secrets.sh:    # Generate new secret
+./tools/rotate-secrets.sh:    local new_secret
+./tools/rotate-secrets.sh:    new_secret="$(generate_secure_password "$DEFAULT_LENGTH" "$complexity")"
+./tools/rotate-secrets.sh:    # Store new secret
+./tools/rotate-secrets.sh:    if echo "$new_secret" | pass insert -m "$secret_name" >/dev/null 2>&1; then
+./tools/rotate-secrets.sh:        cat << EOF | pass insert -m "${secret_name}.metadata" >/dev/null 2>&1
+./tools/rotate-secrets.sh:rotation_count: $(( $(pass show "${secret_name}.metadata" 2>/dev/null | grep "rotation_count:" | cut -d: -f2 | tr -d ' ' || echo 0) + 1 ))
+./tools/rotate-secrets.sh:        echo "$old_secret" | pass insert -m "$backup_entry" >/dev/null 2>&1
+./tools/rotate-secrets.sh:            if "$update_cmd" "$secret_name" "$new_secret"; then
+./tools/rotate-secrets.sh:                audit_log "SECRET_ROTATED" "$secret_name" "SUCCESS" "external_update_success"
+./tools/rotate-secrets.sh:                ok "Successfully rotated secret: $secret_name"
+./tools/rotate-secrets.sh:                warn "External update failed for $secret_name, rolling back"
+./tools/rotate-secrets.sh:                echo "$old_secret" | pass insert -m "$secret_name" >/dev/null 2>&1
+./tools/rotate-secrets.sh:                audit_log "SECRET_ROTATED" "$secret_name" "FAILED" "external_update_failed_rollback"
+./tools/rotate-secrets.sh:            audit_log "SECRET_ROTATED" "$secret_name" "SUCCESS" "no_external_update"
+./tools/rotate-secrets.sh:            ok "Successfully rotated secret: $secret_name"
+./tools/rotate-secrets.sh:        audit_log "SECRET_ROTATED" "$secret_name" "FAILED" "pass_insert_failed"
+./tools/rotate-secrets.sh:        die "Failed to store new secret for: $secret_name"
+./tools/rotate-secrets.sh:# Function: list_secrets
+./tools/rotate-secrets.sh:# Purpose: List all managed secrets with rotation status
+./tools/rotate-secrets.sh:list_secrets() {
+./tools/rotate-secrets.sh:    info "Managed secrets and rotation status:"
+./tools/rotate-secrets.sh:    while IFS='|' read -r secret_path interval complexity update_cmd; do
+./tools/rotate-secrets.sh:        [[ "$secret_path" =~ ^#.*$ ]] && continue  # Skip comments
+./tools/rotate-secrets.sh:        [[ -z "$secret_path" ]] && continue        # Skip empty lines
+./tools/rotate-secrets.sh:        if pass show "${secret_path}.metadata" >/dev/null 2>&1; then
+./tools/rotate-secrets.sh:            last_rotation="$(pass show "${secret_path}.metadata" | grep "last_rotation:" | cut -d: -f2 | tr -d ' ' || echo "1970-01-01")"
+./tools/rotate-secrets.sh:               "$secret_path" \
+./tools/rotate-secrets.sh:# Function: verify_secrets
+./tools/rotate-secrets.sh:# Purpose: Verify secret integrity and accessibility
+./tools/rotate-secrets.sh:verify_secrets() {
+./tools/rotate-secrets.sh:    info "Verifying secret integrity and accessibility"
+./tools/rotate-secrets.sh:    while IFS='|' read -r secret_path interval complexity update_cmd; do
+./tools/rotate-secrets.sh:        [[ "$secret_path" =~ ^#.*$ ]] && continue
+./tools/rotate-secrets.sh:        [[ -z "$secret_path" ]] && continue
+./tools/rotate-secrets.sh:        if pass show "$secret_path" >/dev/null 2>&1; then
+./tools/rotate-secrets.sh:            ok "✓ $secret_path"
+./tools/rotate-secrets.sh:            fail "✗ $secret_path (inaccessible)"
+./tools/rotate-secrets.sh:        ok "All secrets verified successfully"
+./tools/rotate-secrets.sh:        warn "$errors secrets failed verification"
+./tools/rotate-secrets.sh:    local secrets=()
+./tools/rotate-secrets.sh:                secrets+=("$1")
+./tools/rotate-secrets.sh:    # Acquire lock for operations that modify secrets
+./tools/rotate-secrets.sh:                info "DRY RUN: Would rotate the following secrets:"
+./tools/rotate-secrets.sh:                list_secrets
+./tools/rotate-secrets.sh:            if [[ ${#secrets[@]} -eq 0 ]]; then
+./tools/rotate-secrets.sh:                # Rotate all configured secrets
+./tools/rotate-secrets.sh:                while IFS='|' read -r secret_path interval complexity update_cmd; do
+./tools/rotate-secrets.sh:                    [[ "$secret_path" =~ ^#.*$ ]] && continue
+./tools/rotate-secrets.sh:                    [[ -z "$secret_path" ]] && continue
+./tools/rotate-secrets.sh:                    rotate_secret "$secret_path" "$force_flag"
+./tools/rotate-secrets.sh:                # Rotate specified secrets
+./tools/rotate-secrets.sh:                for secret in "${secrets[@]}"; do
+./tools/rotate-secrets.sh:                    rotate_secret "$secret" "$force_flag"
+./tools/rotate-secrets.sh:            if [[ ${#secrets[@]} -eq 0 ]]; then
+./tools/rotate-secrets.sh:            list_secrets
+./tools/rotate-secrets.sh:            verify_secrets
+./bootstrap_machine_rites.sh:           "$XDG_CONFIG_HOME/secrets.env" "$HOME/.gitignore_global" \
+./bootstrap_machine_rites.sh:    sudo -n true 2>/dev/null || warn "sudo may prompt for password"
+./bootstrap_machine_rites.sh:# 30-secrets.sh
+./bootstrap_machine_rites.sh:write_atomic "$HOME/.bashrc.d/30-secrets.sh" <<'EOF'
+./bootstrap_machine_rites.sh:_plain="${XDG_CONFIG_HOME:-$HOME/.config}/secrets.env"
+./bootstrap_machine_rites.sh:    key="${line%%=*}"
+./bootstrap_machine_rites.sh:    key="${key#"${key%%[![:space:]]*}"}"; key="${key%"${key##*[![:space:]]}"}"
+./bootstrap_machine_rites.sh:    [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && export "$key=$val"
+./bootstrap_machine_rites.sh:  local key_type="${1:-ed25519}"
+./bootstrap_machine_rites.sh:  local key_file="$HOME/.ssh/id_${key_type}"
+./bootstrap_machine_rites.sh:for pattern in ".config/secrets.env" ".bashrc.d/99-local.sh" "*.swp" ".DS_Store" "*.tmp"; do
+./bootstrap_machine_rites.sh:  if gpg --list-secret-keys --with-colons 2>/dev/null | grep -q '^sec:'; then
+./bootstrap_machine_rites.sh:      key="$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ {print $5; exit}')"
+./bootstrap_machine_rites.sh:# ----- migrate plaintext secrets -----
+./bootstrap_machine_rites.sh:if [ -f "$XDG_CONFIG_HOME/secrets.env" ] && pass ls >/dev/null 2>&1; then
+./bootstrap_machine_rites.sh:  say "Migrating secrets to pass..."
+./bootstrap_machine_rites.sh:    key="${line%%=*}"
+./bootstrap_machine_rites.sh:    key="${key#"${key%%[![:space:]]*}"}"; key="${key%"${key##*[![:space:]]}"}"
+./bootstrap_machine_rites.sh:    if [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+./bootstrap_machine_rites.sh:  done < "$XDG_CONFIG_HOME/secrets.env"
+./bootstrap_machine_rites.sh:    read -rp "Shred plaintext secrets file? [y/N] " -n 1 -r; echo
+./bootstrap_machine_rites.sh:    [[ $REPLY =~ ^[Yy]$ ]] && shred -u "$XDG_CONFIG_HOME/secrets.env"
+./bootstrap_machine_rites.sh:    info "Plaintext secrets remain at: $XDG_CONFIG_HOME/secrets.env"
+./bootstrap_machine_rites.sh:regex = '''(?i)(api[_-]?key|apikey)['""]?\s*[:=]\s*['""]?([a-z0-9]{32,})'''
+./bootstrap_machine_rites.sh:if gpg --list-secret-keys 2>/dev/null | grep -q '^sec'; then
+./bootstrap_machine_rites.sh:  keys=$(gpg --list-secret-keys --keyid-format SHORT 2>/dev/null | grep '^sec' | wc -l)
+./bootstrap_machine_rites.sh:  warn "No GPG secret keys (pass won't work)"
+./bootstrap_machine_rites.sh:  [[ -f "$key" ]] && { ok "Key: $(basename "$key")"; found=1; }
+./bootstrap_machine_rites.sh:  ok "No secrets detected"
+./bootstrap_machine_rites.sh:pass_dir="${PASSWORD_STORE_DIR:-$HOME/.password-store}"
+./bootstrap_machine_rites.sh:echo "Restore: gpg -d $backup_file | tar xzf - -C ~/.password-store"
+./bootstrap_machine_rites.sh:          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+./tests/fixtures/test_data.sh:    signingkey = ABCDEF1234567890
+./tests/fixtures/test_data.sh:    mkdir -p "$env_dir/home"/{.config/chezmoi,.password-store,.cache}
+./tests/fixtures/test_data.sh:    # Create password store
+./tests/fixtures/test_data.sh:    mkdir -p "$env_dir/home/.password-store/personal"
+./tests/fixtures/test_data.sh:    echo "mock_token" > "$env_dir/home/.password-store/personal/github_token.gpg"
+./tests/comprehensive-test-runner.sh:    # Test for hardcoded secrets
+./tests/comprehensive-test-runner.sh:    run_test "secret_scan" "bash -c 'grep -r \"password\\|secret\\|key.*=\" --exclude-dir=.git --exclude-dir=node_modules . | grep -v \"example\" | wc -l'"
+./tests/integration/test_makefile_integration.sh:test_makefile_secrets_management() {
+./tests/integration/test_makefile_integration.sh:    # Test secrets management targets
+./tests/integration/test_makefile_integration.sh:        echo "│   └── test_secret"
+./tests/integration/test_makefile_integration.sh:        echo "Enter password for $2:"
+./tests/integration/test_makefile_integration.sh:    # Test secrets list
+./tests/integration/test_makefile_integration.sh:    local secrets_output
+./tests/integration/test_makefile_integration.sh:    secrets_output=$(make secrets-list 2>&1)
+./tests/integration/test_makefile_integration.sh:    assert_contains "$secrets_output" "Password Store" "secrets list shows password store"
+./tests/integration/test_makefile_integration.sh:    # Note: secrets-add requires interactive input, so we test the command construction
+./tests/integration/test_makefile_integration.sh:    assert_command_succeeds "make -n secrets-add KEY=test_key" "secrets-add target syntax is valid"
+./tests/integration/test_makefile_integration.sh:    run_test "Makefile Secrets Management" test_makefile_secrets_management
+./tests/e2e/test_complete_bootstrap.sh:    "--list-secret-keys")
+./tests/e2e/test_complete_bootstrap.sh:        mkdir -p "$HOME/.password-store"
+./tests/e2e/test_complete_bootstrap.sh:        echo "Enter password for $2:"
+./tests/e2e/test_complete_bootstrap.sh:        echo "mock_password_value"
+./tests/e2e/test_complete_bootstrap.sh:if ! gpg --list-secret-keys | grep -q sec; then
+./tests/e2e/test_complete_bootstrap.sh:info "Step 6/10: Initializing password store"
+./tests/e2e/test_complete_bootstrap.sh:        "$HOME/.password-store"
+./tests/results/comprehensive-test-report.md:| Secret Scanning | ❌ | 601 potential secrets detected |
+./tests/results/comprehensive-test-report.md:- 601 instances of potential hardcoded secrets/keys/passwords
+./tests/results/comprehensive-test-report.md:- **Impact:** Possible secrets in codebase
+./tests/results/comprehensive-test-report.md:   grep -r "password\|secret\|key.*=" --exclude-dir=.git --exclude-dir=node_modules \
+./tests/results/comprehensive-test-report.md:1. **Security audit and secret management**
+./tests/results/test-results-20250919-010000.json:        "secret_scanning": {"status": "failed", "findings": 601, "severity": "high"},
+./tests/results/test-results-20250919-010000.json:      "critical_findings": "601 instances of potential hardcoded secrets"
+./tests/results/test-results-20250919-010000.json:      "impact": "possible_secrets_in_codebase",
+./tests/critical-fixes.sh:grep -r "password\|secret\|key.*=" \
+./tests/critical-fixes.sh:# Check 1: No hardcoded secrets
+./tests/critical-fixes.sh:echo "1. Checking for hardcoded secrets..."
+./tests/critical-fixes.sh:if ! grep -r "password.*=" --exclude-dir=.git --exclude-dir=node_modules . >/dev/null 2>&1; then
+./tests/critical-fixes.sh:    echo "   ✅ No hardcoded passwords found"
+./tests/critical-fixes.sh:    echo "   ❌ Potential hardcoded passwords found"
+./tests/unit/test_validation.sh:        [[ "$key" =~ ^[[:space:]]*# ]] && continue
+./tests/unit/test_validation.sh:        if ! [[ "$key" =~ ^[A-Z_][A-Z0-9_]*$ ]]; then
+./docker/USAGE.md:- **Privileges**: Full sudo access (passwordless)
+./docker/README.md:- **Dedicated Test User**: `testuser` with sudo access (password: `testpass`)
+./docker/.dockerignore:# SSH keys and secrets
+./standards.md:│   │   ├── 30-secrets.sh       # Pass/GPG secrets management
+./standards.md:- **Purpose**: Create encrypted backups of password store
+./standards.md:# 3. Check for secrets
+./standards.md:# 2. Backup secrets
+./standards.md:make secrets-backup
+./standards.md:**Solution**: Check GPG key exists: `gpg --list-secret-keys`
+./standards.md:- **Security**: Zero secrets in repository
+./standards.md:- [ ] No hardcoded secrets
+./standards.md:- **SEC:secrets** - Secret management patterns
+./standards.md:- ❌ Store secrets in files (use pass)
+./.gitleaks.toml:regex = '''(?i)(api[_-]?key|apikey)['""]?\s*[:=]\s*['""]?([a-z0-9]{32,})'''

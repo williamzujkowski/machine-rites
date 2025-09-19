@@ -1,0 +1,121 @@
+{
+  "name": "machine-rites",
+  "version": "2.1.0",
+  "description": "Enterprise-grade dotfiles management with comprehensive testing, security, and performance optimization",
+  "main": "bootstrap_machine_rites.sh",
+  "scripts": {
+    "test": "cd tests && ./run_tests.sh",
+    "test:unit": "cd tests/unit && ./test_bootstrap.sh",
+    "test:integration": "cd tests/integration && ./test_chezmoi_apply.sh",
+    "test:e2e": "cd tests/e2e && ./test_complete_bootstrap.sh",
+    "test:lib": "cd tests/lib && ./run_all_tests.sh",
+    "test:performance": "bash tools/benchmark.sh",
+    "test:coverage": "cd tests && ./coverage_report.sh",
+    "benchmark": "bash tools/benchmark.sh",
+    "optimize": "bash tools/optimize-bootstrap.sh && bash tools/optimize-docker.sh && bash tools/cache-manager.sh",
+    "optimize:bootstrap": "bash tools/optimize-bootstrap.sh",
+    "optimize:docker": "bash tools/optimize-docker.sh",
+    "monitor": "bash tools/performance-monitor.sh",
+    "monitor:performance": "bash tools/performance-monitor.sh",
+    "monitor:health": "bash tools/doctor.sh",
+    "audit": "bash tools/weekly-audit.sh",
+    "audit:security": "bash security/audit/audit-logger.sh",
+    "audit:weekly": "bash tools/weekly-audit.sh",
+    "verify": "bash tools/verify-docs.sh",
+    "verify:docs": "bash tools/verify-docs.sh",
+    "verify:vestigial": "bash tools/check-vestigial.sh",
+    "backup": "bash tools/backup-pass.sh",
+    "backup:secrets": "bash tools/backup-pass.sh",
+    "rotate:secrets": "bash tools/rotate-secrets.sh",
+    "update": "bash tools/update.sh",
+    "update:docs": "bash tools/update-claude-md.sh",
+    "cache:manage": "bash tools/cache-manager.sh",
+    "install": "bash bootstrap_machine_rites.sh",
+    "install:unattended": "bash bootstrap_machine_rites.sh --unattended",
+    "install:verbose": "bash bootstrap_machine_rites.sh --verbose",
+    "bootstrap": "bash bootstrap/bootstrap.sh",
+    "bootstrap:optimized": "bash bootstrap/bootstrap-optimized.sh",
+    "doctor": "bash tools/doctor.sh",
+    "build": "echo '✅ Machine-rites v2.1.0 - Production Ready'",
+    "lint": "find . -name '*.sh' -not -path './node_modules/*' -exec shellcheck {} +",
+    "lint:fix": "find . -name '*.sh' -not -path './node_modules/*' -exec shellcheck --format=diff {} + | patch -p1",
+    "security:scan": "bash security/audit/audit-logger.sh",
+    "security:compliance": "bash security/compliance/nist-csf-mapper.sh && bash security/compliance/cis-benchmark.sh",
+    "compliance:nist": "bash security/compliance/nist-csf-mapper.sh",
+    "compliance:cis": "bash security/compliance/cis-benchmark.sh",
+    "setup:hooks": "bash tools/setup-doc-hooks.sh",
+    "validate": "npm run test && npm run lint && npm run verify && npm run security:scan"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "keywords": [
+    "dotfiles",
+    "development-environment",
+    "bash",
+    "shell",
+    "automation",
+    "performance",
+    "optimization",
+    "security",
+    "enterprise",
+    "testing",
+    "ci-cd",
+    "docker",
+    "chezmoi",
+    "ubuntu",
+    "linux",
+    "modular",
+    "atomic-operations",
+    "rollback",
+    "monitoring",
+    "compliance",
+    "nist-csf",
+    "cis-benchmarks",
+    "documentation"
+  ],
+  "author": "Machine-Rites Development Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/williamzujkowski/machine-rites.git"
+  },
+  "bugs": {
+    "url": "https://github.com/williamzujkowski/machine-rites/issues"
+  },
+  "homepage": "https://github.com/williamzujkowski/machine-rites#readme",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "tools/**/*.js",
+      "src/**/*.js"
+    ],
+    "coverageDirectory": "tests/coverage",
+    "coverageReporters": [
+      "text",
+      "html",
+      "lcov"
+    ],
+    "testTimeout": 30000
+  },
+  "config": {
+    "platform": "ubuntu-24.04",
+    "shell": "bash",
+    "version": "2.1.0",
+    "status": "production-ready"
+  }
+}

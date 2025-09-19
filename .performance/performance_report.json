@@ -1,0 +1,184 @@
+{
+    "benchmark_id": "benchmark-20250919-095336",
+    "timestamp": "2025-09-19T09:53:37-04:00",
+    "overall_score": 100.0,
+    "passed_tests": 1,
+    "total_tests": 1,
+    "results": {
+  "cache_usage": {
+    "test": "cache_usage",
+    "total_size_gb": 2.29,
+    "target_gb": 10,
+    "directories": [
+      {
+        "path": "/home/william/.cache",
+        "size_gb": 0.92
+      },
+      {
+        "path": "/home/william/.npm",
+        "size_gb": 1.35
+      },
+      {
+        "path": "/home/william/git/machine-rites/.git",
+        "size_gb": 0.02
+      }
+    ],
+    "passed": true,
+    "timestamp": "2025-09-19T09:53:37-04:00"
+  },
+  "docker_sizes": {
+    "test": "docker_image_sizes",
+    "images": [
+      {
+        "repository": "localhost/machine-rites/ubuntu-24.04",
+        "tag": "test",
+        "size": "1.19",
+        "size_mb": 0
+      },
+      {
+        "repository": "localhost/oscalize",
+        "tag": "dev",
+        "size": "1.22",
+        "size_mb": 0
+      },
+      {
+        "repository": "localhost/oscalize",
+        "tag": "test",
+        "size": "1.21",
+        "size_mb": 0
+      },
+      {
+        "repository": "localhost/oscalize",
+        "tag": "latest",
+        "size": "1.22",
+        "size_mb": 0
+      },
+      {
+        "repository": "localhost/oscalize",
+        "tag": "test-fixed",
+        "size": "1.22",
+        "size_mb": 0
+      }
+    ],
+    "target_mb": 500,
+    "timestamp": "2025-09-19T09:53:36-04:00"
+  },
+  "file_io": {
+    "test": "file_io",
+    "write_time_ms": 20,
+    "read_time_ms": 6,
+    "write_speed_mb_s": 500.00,
+    "read_speed_mb_s": 1666.67,
+    "test_size_mb": 10,
+    "timestamp": "2025-09-19T09:53:37-04:00"
+  },
+  "git_operations": {
+    "test": "git_operations",
+    "git_status_ms": 101,
+    "git_log_ms": 3,
+    "repo_size_mb": 24,
+    "commit_count": 9,
+    "timestamp": "2025-09-19T09:53:37-04:00"
+  },
+  "memory_usage": {
+    "test": "memory_usage",
+    "total_mb": 64012,
+    "used_mb": 10767,
+    "free_mb": 31523,
+    "usage_percent": 16.82,
+    "top_processes": [
+      {
+        "process": "/snap/multipass/15703/usr/bin/qemu-system-x86_64",
+        "memory_percent": 3.0
+      },
+      {
+        "process": "/proc/self/exe",
+        "memory_percent": 1.0
+      },
+      {
+        "process": "claude",
+        "memory_percent": 0.9
+      },
+      {
+        "process": "/opt/google/chrome/chrome",
+        "memory_percent": 0.8
+      },
+      {
+        "process": "/home/william/snap/steam/common/.local/share/Steam/ubuntu12_64/steamwebhelper",
+        "memory_percent": 0.8
+      },
+      {
+        "process": "/snap/code/206/usr/share/code/code",
+        "memory_percent": 0.6
+      },
+      {
+        "process": "/opt/google/chrome/chrome",
+        "memory_percent": 0.6
+      },
+      {
+        "process": "/usr/bin/gnome-shell",
+        "memory_percent": 0.6
+      },
+      {
+        "process": "./steamwebhelper",
+        "memory_percent": 0.5
+      }
+    ],
+    "timestamp": "2025-09-19T09:53:37-04:00"
+  },
+  "monitor_config": {
+    "version": "1.0.0",
+    "timestamp": "2025-09-19T09:53:14-04:00",
+    "collection_interval_seconds": 30,
+    "retention_days": 30,
+    "metrics": {
+      "system": {
+        "enabled": true,
+        "collect": [
+          "cpu",
+          "memory",
+          "disk",
+          "network"
+        ]
+      },
+      "application": {
+        "enabled": true,
+        "collect": [
+          "shell_startup",
+          "bootstrap",
+          "git_ops"
+        ]
+      },
+      "docker": {
+        "enabled": true,
+        "collect": [
+          "image_sizes",
+          "container_stats"
+        ]
+      },
+      "cache": {
+        "enabled": true,
+        "collect": [
+          "cache_sizes",
+          "cleanup_events"
+        ]
+      }
+    },
+    "alerts": {
+      "memory_threshold": 85,
+      "disk_threshold": 90,
+      "cache_threshold": 15
+    }
+  },
+  "shell_startup": {
+    "test": "shell_startup",
+    "avg_time_ms": 3,
+    "target_ms": 2,
+    "passed": false,
+    "timestamp": "2025-09-19T09:53:36-04:00"
+  }
+},
+    "recommendations": [
+  "Consider optimizing shell initialization scripts and removing unnecessary plugins"
+]
+}

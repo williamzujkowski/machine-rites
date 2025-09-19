@@ -1,0 +1,18 @@
+{
+        "timestamp": 1758290003134,
+        "type": "system",
+        "memory": {
+            "total_mb": 64012,
+            "used_mb": 11390,
+            "free_mb": 30900,
+            "usage_percent": 17.79
+        },
+        "cpu": {
+            "usage_percent": 2.7,
+            "load_avg": 0.71
+        },
+        "disk": {
+            "usage_percent": 23,
+            "free": "673G"
+        }
+    }
