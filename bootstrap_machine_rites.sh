@@ -2,48 +2,36 @@
 # Ubuntu 24.04 — modular bash + chezmoi (sourceDir in your repo) + pass + gitleaks + pipx
 # Production-grade with all critical fixes and enhancements
 #
-# DEPRECATED: This script is now a compatibility wrapper for the new modular bootstrap system.
-# For new installations, use: bootstrap/bootstrap.sh
-# This wrapper maintains backwards compatibility while redirecting to the new system.
-#
 set -euo pipefail
 
-# Detect if we should use the new modular system
+# ----- performance tracking & optimization -----
+BOOTSTRAP_START=$(date +%s%3N)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NEW_BOOTSTRAP="$SCRIPT_DIR/bootstrap/bootstrap.sh"
+PARALLEL_JOBS=${BOOTSTRAP_PARALLEL_JOBS:-4}
 
-if [[ -x "$NEW_BOOTSTRAP" ]]; then
-    echo "⚠️  NOTICE: Redirecting to new modular bootstrap system"
-    echo "   Old script: $0"
-    echo "   New script: $NEW_BOOTSTRAP"
-    echo "   For full functionality, use the new script directly"
-    echo ""
-    echo "Starting modular bootstrap in 3 seconds..."
-    sleep 3
+# Fast command availability check
+has_command() { command -v "$1" >/dev/null 2>&1; }
 
-    # Map old flags to new system
-    NEW_ARGS=()
-    for arg in "$@"; do
-        case "$arg" in
-            --unattended|-u) NEW_ARGS+=("--unattended") ;;
-            --verbose|-v) NEW_ARGS+=("--verbose") ;;
-            --skip-backup) NEW_ARGS+=("--skip-backup") ;;
-            --debug) NEW_ARGS+=("--debug") ;;
-            --help|-h) NEW_ARGS+=("--help") ;;
-            *) NEW_ARGS+=("$arg") ;;
-        esac
-    done
+# Performance tracking function
+track_performance() {
+    local current_time=$(date +%s%3N)
+    local elapsed=$((current_time - BOOTSTRAP_START))
 
-    # Execute new bootstrap system
-    exec "$NEW_BOOTSTRAP" "${NEW_ARGS[@]}"
-fi
+    info "Bootstrap completed in ${elapsed}ms"
 
-# If new system not available, fall back to legacy implementation
-echo "⚠️  WARNING: Using legacy bootstrap implementation"
-echo "   Consider upgrading to the modular system at: bootstrap/bootstrap.sh"
-echo ""
+    # Save performance metrics
+    local metrics_dir="$SCRIPT_DIR/.performance"
+    mkdir -p "$metrics_dir"
 
-# Continue with original implementation...
+    cat > "$metrics_dir/bootstrap_performance.json" <<PERF_EOF
+{
+    "timestamp": "$(date -Iseconds)",
+    "execution_time_ms": $elapsed,
+    "script": "bootstrap_machine_rites.sh",
+    "comprehensive": true
+}
+PERF_EOF
+}
 
 # ----- color codes & helpers -----
 C_G="\033[1;32m"; C_Y="\033[1;33m"; C_R="\033[1;31m"; C_B="\033[1;34m"; C_N="\033[0m"
@@ -230,15 +218,58 @@ ROLLBACK
   info "Rollback script: $backup_dir/rollback.sh"
 fi
 
-# ----- install packages -----
+# ----- install packages (optimized) -----
 say "Installing system packages..."
 export DEBIAN_FRONTEND=noninteractive
+
+# Parallel package availability checking
+check_packages_parallel() {
+    local packages=("$@")
+    local missing=()
+    local temp_dir=$(mktemp -d)
+    local pids=()
+
+    # Launch parallel checks
+    for i in "${!packages[@]}"; do
+        {
+            local pkg="${packages[$i]}"
+            local result_file="$temp_dir/result_$i"
+            if has_command "$pkg" || dpkg -s "$pkg" >/dev/null 2>&1; then
+                echo "installed" > "$result_file"
+            else
+                echo "missing" > "$result_file"
+            fi
+        } &
+        pids+=($!)
+
+        # Limit concurrent jobs
+        if [ ${#pids[@]} -ge $PARALLEL_JOBS ]; then
+            wait "${pids[0]}"
+            pids=("${pids[@]:1}")
+        fi
+    done
+
+    # Wait for remaining jobs
+    for pid in "${pids[@]}"; do
+        wait "$pid"
+    done
+
+    # Collect results
+    for i in "${!packages[@]}"; do
+        local result=$(cat "$temp_dir/result_$i" 2>/dev/null || echo "error")
+        if [ "$result" = "missing" ]; then
+            missing+=("${packages[$i]}")
+        fi
+    done
+
+    rm -rf "$temp_dir"
+    echo "${missing[@]}"
+}
+
 # Leave chezmoi to the official installer fallback below (Ubuntu 24.04 lacks package)
 packages=(curl git gnupg pass age gitleaks bash-completion pipx openssh-client)
-missing=()
-for p in "${packages[@]}"; do
-  dpkg -s "$p" >/dev/null 2>&1 || missing+=("$p")
-done
+missing=($(check_packages_parallel "${packages[@]}"))
+
 if [ "${#missing[@]}" -gt 0 ]; then
   say "Installing: ${missing[*]}"
   if [ "$(id -u)" -eq 0 ]; then
@@ -254,12 +285,41 @@ else
 fi
 
 # ----- ensure chezmoi via official installer if not present -----
+# ----- optimize git configuration (parallel) -----
+optimize_git_config() {
+    if [ "$VERBOSE" -eq 1 ]; then
+        info "Optimizing git configuration for performance..."
+    fi
+
+    # Parallel git config operations
+    {
+        git config --global core.preloadindex true 2>/dev/null || true
+        git config --global core.fscache true 2>/dev/null || true
+        git config --global gc.auto 256 2>/dev/null || true
+    } &
+
+    {
+        git config --global pack.threads 0 2>/dev/null || true
+        git config --global pack.deltaCacheSize 2047m 2>/dev/null || true
+        git config --global pack.packSizeLimit 2g 2>/dev/null || true
+    } &
+
+    wait
+}
+
+# Run git optimization in background while installing chezmoi
+optimize_git_config &
+GIT_OPTIMIZE_PID=$!
+
 if ! command -v chezmoi >/dev/null 2>&1; then
   say "Installing chezmoi via official installer..."
   sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin" || die "chezmoi install failed"
   case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
   command -v chezmoi >/dev/null 2>&1 || die "chezmoi not found on PATH after install"
 fi
+
+# Wait for git optimization to complete
+wait $GIT_OPTIMIZE_PID 2>/dev/null || true
 
 # pipx setup (do NOT eval pipx output)
 if command -v pipx >/dev/null 2>&1; then
@@ -1187,6 +1247,9 @@ fi
 if [ "$errors" -gt 0 ]; then
   die "Validation failed with $errors errors"
 fi
+
+# ----- performance tracking -----
+track_performance
 
 # ----- complete -----
 say "Bootstrap complete!"

@@ -3,15 +3,26 @@
 # Tests validation functions and input sanitization
 set -euo pipefail
 
-# Source test framework
-source "$(dirname "${BASH_SOURCE[0]}")/../test-framework.sh"
+# Source test framework with absolute path
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$TEST_DIR/../test-framework.sh"
 
 # Test configuration
 readonly SCRIPT_UNDER_TEST="$PROJECT_ROOT/bootstrap_machine_rites.sh"
-readonly MOCK_ENV="$(setup_mock_environment "validation")"
+
+# Load required libraries safely
+if [[ -f "$PROJECT_ROOT/lib/validation.sh" ]]; then
+    source "$PROJECT_ROOT/lib/validation.sh"
+fi
+if [[ -f "$PROJECT_ROOT/lib/common.sh" ]]; then
+    source "$PROJECT_ROOT/lib/common.sh"
+fi
+
+MOCK_ENV=""
 
 # Test setup
 setup_validation_tests() {
+    MOCK_ENV="$(setup_mock_environment "validation")"
     export HOME="$MOCK_ENV/home"
     mkdir -p "$HOME"
     log_debug "Setup validation tests environment in: $MOCK_ENV"

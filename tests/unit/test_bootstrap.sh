@@ -3,15 +3,26 @@
 # Tests core bootstrap functionality and workflow
 set -euo pipefail
 
-# Source test framework
-source "$(dirname "${BASH_SOURCE[0]}")/../test-framework.sh"
+# Source test framework with absolute path
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$TEST_DIR/../test-framework.sh"
 
 # Test configuration
 readonly SCRIPT_UNDER_TEST="$PROJECT_ROOT/bootstrap_machine_rites.sh"
-readonly MOCK_ENV="$(setup_mock_environment "bootstrap")"
+
+# Load required libraries safely
+if [[ -f "$PROJECT_ROOT/lib/common.sh" ]]; then
+    source "$PROJECT_ROOT/lib/common.sh"
+fi
+if [[ -f "$PROJECT_ROOT/lib/validation.sh" ]]; then
+    source "$PROJECT_ROOT/lib/validation.sh"
+fi
+
+MOCK_ENV=""
 
 # Test setup
 setup_bootstrap_tests() {
+    MOCK_ENV="$(setup_mock_environment "bootstrap")"
     export HOME="$MOCK_ENV/home"
     export CHEZMOI_SRC="$MOCK_ENV/chezmoi"
     export APT_CACHE_DIR="$MOCK_ENV/apt-cache"
@@ -584,7 +595,7 @@ simulate_task_with_progress() {
 
     for i in "${!tasks[@]}"; do
         show_progress $((i + 1)) "$total" "${tasks[$i]}"
-        sleep 0.1  # Simulate work
+        # sleep 0.1  # Simulate work - removed to speed up tests
     done
     echo ""  # New line after progress
 }

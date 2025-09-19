@@ -3,15 +3,26 @@
 # Tests platform-specific detection and compatibility functions
 set -euo pipefail
 
-# Source test framework
-source "$(dirname "${BASH_SOURCE[0]}")/../test-framework.sh"
+# Source test framework with absolute path
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$TEST_DIR/../test-framework.sh"
 
 # Test configuration
 readonly SCRIPT_UNDER_TEST="$PROJECT_ROOT/bootstrap_machine_rites.sh"
-readonly MOCK_ENV="$(setup_mock_environment "platform_detection")"
+
+# Load required libraries safely
+if [[ -f "$PROJECT_ROOT/lib/platform.sh" ]]; then
+    source "$PROJECT_ROOT/lib/platform.sh"
+fi
+if [[ -f "$PROJECT_ROOT/lib/common.sh" ]]; then
+    source "$PROJECT_ROOT/lib/common.sh"
+fi
+
+MOCK_ENV=""
 
 # Test setup
 setup_platform_tests() {
+    MOCK_ENV="$(setup_mock_environment "platform_detection")"
     export HOME="$MOCK_ENV/home"
     mkdir -p "$HOME"
     log_debug "Setup platform detection tests environment in: $MOCK_ENV"
@@ -285,6 +296,7 @@ check_memory_requirements() {
 # Create mock /proc/meminfo
 mkdir -p "$1/proc"
 echo "MemTotal:        8048576 kB" > "$1/proc/meminfo"
+export PROC_MEMINFO="$1/proc/meminfo"
 
 # Test memory detection
 result=$(detect_memory)

@@ -146,22 +146,24 @@ run_test() {
     local test_name="$1" test_function="$2"
     local test_start test_end test_duration
 
-    test_start=$(date +%s.%N)
+    test_start=$(date +%s)
     ((TESTS_TOTAL++))
 
     log_info "Running test: $test_name"
 
     if "$test_function"; then
         ((TESTS_PASSED++))
-        test_end=$(date +%s.%N)
-        test_duration=$(awk "BEGIN {printf \"%.3f\", $test_end - $test_start}")
+        test_end=$(date +%s)
+        test_duration=$((test_end - test_start))
         log_success "✓ $test_name (${test_duration}s)"
+        # Record test result
         record_test_result "$test_name" "passed" "$test_duration"
     else
         ((TESTS_FAILED++))
-        test_end=$(date +%s.%N)
-        test_duration=$(awk "BEGIN {printf \"%.3f\", $test_end - $test_start}")
+        test_end=$(date +%s)
+        test_duration=$((test_end - test_start))
         log_error "✗ $test_name (${test_duration}s)"
+        # Record test result
         record_test_result "$test_name" "failed" "$test_duration"
     fi
 }
@@ -198,6 +200,11 @@ EOF
 # JUnit XML recording
 record_test_result() {
     local test_name="$1" status="$2" duration="$3" message="${4:-}"
+
+    # Skip XML recording if not properly initialized
+    if [[ -z "${JUNIT_XML_OUTPUT:-}" ]] || [[ ! -f "$JUNIT_XML_OUTPUT" ]]; then
+        return 0
+    fi
 
     cat >> "$JUNIT_XML_OUTPUT" << EOF
     <testcase name="$test_name" classname="$CURRENT_TEST_SUITE" time="$duration">

@@ -342,7 +342,7 @@ format: ## Format shell scripts
 	@if command -v shfmt >/dev/null 2>&1; then \
 		find "$(PROJECT_ROOT)" -name "*.sh" -type f -exec shfmt -w -i 4 {} +; \
 	else \
-		$(call log_warn,"shfmt not installed - skipping formatting"); \
+		echo -e "$(YELLOW)[WARN]$(NC) shfmt not installed - skipping formatting"; \
 	fi
 
 .PHONY: deps-check
