@@ -10,30 +10,70 @@ fi
 if [[ -z "${PROJECT_ROOT:-}" ]]; then
     readonly PROJECT_ROOT="$(cd "$TEST_ROOT/.." && pwd)"
 fi
-readonly TEST_REPORTS_DIR="$TEST_ROOT/reports"
-readonly TEST_COVERAGE_DIR="$TEST_ROOT/coverage"
-readonly TEST_FIXTURES_DIR="$TEST_ROOT/fixtures"
-readonly TEST_MOCKS_DIR="$TEST_ROOT/mocks"
+if [[ -z "${TEST_REPORTS_DIR:-}" ]]; then
+    readonly TEST_REPORTS_DIR="$TEST_ROOT/reports"
+fi
+if [[ -z "${TEST_COVERAGE_DIR:-}" ]]; then
+    readonly TEST_COVERAGE_DIR="$TEST_ROOT/coverage"
+fi
+if [[ -z "${TEST_FIXTURES_DIR:-}" ]]; then
+    readonly TEST_FIXTURES_DIR="$TEST_ROOT/fixtures"
+fi
+if [[ -z "${TEST_MOCKS_DIR:-}" ]]; then
+    readonly TEST_MOCKS_DIR="$TEST_ROOT/mocks"
+fi
 
 # Colors and formatting
-readonly C_GREEN="\033[1;32m"
-readonly C_YELLOW="\033[1;33m"
-readonly C_RED="\033[1;31m"
-readonly C_BLUE="\033[1;34m"
-readonly C_CYAN="\033[1;36m"
-readonly C_RESET="\033[0m"
+if [[ -z "${C_GREEN:-}" ]]; then
+    readonly C_GREEN="\033[1;32m"
+fi
+if [[ -z "${C_YELLOW:-}" ]]; then
+    readonly C_YELLOW="\033[1;33m"
+fi
+if [[ -z "${C_RED:-}" ]]; then
+    readonly C_RED="\033[1;31m"
+fi
+if [[ -z "${C_BLUE:-}" ]]; then
+    readonly C_BLUE="\033[1;34m"
+fi
+if [[ -z "${C_CYAN:-}" ]]; then
+    readonly C_CYAN="\033[1;36m"
+fi
+if [[ -z "${C_RESET:-}" ]]; then
+    readonly C_RESET="\033[0m"
+fi
 
 # Test statistics
-declare -g TESTS_TOTAL=0
-declare -g TESTS_PASSED=0
-declare -g TESTS_FAILED=0
-declare -g TESTS_SKIPPED=0
-declare -g TEST_START_TIME
-declare -g CURRENT_TEST_SUITE=""
-declare -g JUNIT_XML_OUTPUT=""
-declare -g COVERAGE_ENABLED=false
-declare -g PARALLEL_EXECUTION=false
-declare -g VERBOSE_OUTPUT=false
+if [[ -z "${TESTS_TOTAL:-}" ]]; then
+    declare -g TESTS_TOTAL=0
+fi
+if [[ -z "${TESTS_PASSED:-}" ]]; then
+    declare -g TESTS_PASSED=0
+fi
+if [[ -z "${TESTS_FAILED:-}" ]]; then
+    declare -g TESTS_FAILED=0
+fi
+if [[ -z "${TESTS_SKIPPED:-}" ]]; then
+    declare -g TESTS_SKIPPED=0
+fi
+if [[ -z "${TEST_START_TIME:-}" ]]; then
+    declare -g TEST_START_TIME
+fi
+if [[ -z "${CURRENT_TEST_SUITE:-}" ]]; then
+    declare -g CURRENT_TEST_SUITE=""
+fi
+if [[ -z "${JUNIT_XML_OUTPUT:-}" ]]; then
+    declare -g JUNIT_XML_OUTPUT=""
+fi
+if [[ -z "${COVERAGE_ENABLED:-}" ]]; then
+    declare -g COVERAGE_ENABLED=false
+fi
+if [[ -z "${PARALLEL_EXECUTION:-}" ]]; then
+    declare -g PARALLEL_EXECUTION=false
+fi
+if [[ -z "${VERBOSE_OUTPUT:-}" ]]; then
+    declare -g VERBOSE_OUTPUT=false
+fi
 
 # Initialize test framework
 init_test_framework() {
@@ -147,19 +187,19 @@ run_test() {
     local test_start test_end test_duration
 
     test_start=$(date +%s)
-    ((TESTS_TOTAL++))
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
 
     log_info "Running test: $test_name"
 
     if "$test_function"; then
-        ((TESTS_PASSED++))
+        TESTS_PASSED=$((TESTS_PASSED + 1))
         test_end=$(date +%s)
         test_duration=$((test_end - test_start))
         log_success "✓ $test_name (${test_duration}s)"
         # Record test result
         record_test_result "$test_name" "passed" "$test_duration"
     else
-        ((TESTS_FAILED++))
+        TESTS_FAILED=$((TESTS_FAILED + 1))
         test_end=$(date +%s)
         test_duration=$((test_end - test_start))
         log_error "✗ $test_name (${test_duration}s)"
@@ -170,8 +210,8 @@ run_test() {
 
 skip_test() {
     local test_name="$1" reason="${2:-No reason provided}"
-    ((TESTS_TOTAL++))
-    ((TESTS_SKIPPED++))
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
+    TESTS_SKIPPED=$((TESTS_SKIPPED + 1))
     log_warning "⊘ $test_name (SKIPPED: $reason)"
     record_test_result "$test_name" "skipped" "0.000" "$reason"
 }
