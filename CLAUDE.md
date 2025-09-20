@@ -59,6 +59,19 @@
 
 This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Completion) methodology with Claude-Flow orchestration for systematic Test-Driven Development.
 
+## 📁 Repository Structure
+
+For a complete file/folder tree with descriptions of all components, see [docs/REPOSITORY-STRUCTURE.md](docs/REPOSITORY-STRUCTURE.md).
+
+**Key Directories:**
+- `.chezmoi/` - Dotfiles source templates with modular bash configurations
+- `lib/` - Shared shell libraries (atomic operations, validation, platform detection)
+- `tools/` - Administrative scripts (doctor, backup, performance monitoring)
+- `bootstrap/` - Modular bootstrap system with ordered execution
+- `docker/` - Multi-distro testing infrastructure
+- `tests/` - Comprehensive test suite (unit, integration, E2E, performance)
+- `.claude/` - AI agent integration for automated workflows
+
 ## 📚 Modular Library System ✅
 
 **STATUS: COMPLETED** - The machine-rites project features a fully implemented modular shell library system in the `lib/` directory. Each library is self-contained, idempotent, and follows shellcheck best practices.

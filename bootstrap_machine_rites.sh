@@ -334,16 +334,16 @@ if ! command -v pre-commit >/dev/null 2>&1; then
   pipx install pre-commit >/dev/null || true
 fi
 
-# Optional: install Starship prompt
+# Install Starship prompt (default)
 if ! command -v starship >/dev/null 2>&1; then
-  if [ "$UNATTENDED" -eq 0 ] && [ -t 0 ]; then
-    read -rp "Install Starship prompt? [y/N] " -n 1 -r; echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-      curl -sS https://starship.rs/install.sh | sh -s -- -b "$HOME/.local/bin" -y || warn "Starship install failed"
-    fi
+  say "Installing Starship prompt..."
+  if curl -sS https://starship.rs/install.sh | sh -s -- -b "$HOME/.local/bin" -y >/dev/null 2>&1; then
+    info "Starship prompt installed successfully"
   else
-    info "Consider installing Starship for a fast, pretty prompt: https://starship.rs"
+    warn "Starship install failed - you can install it manually from https://starship.rs"
   fi
+else
+  info "Starship already installed"
 fi
 
 # Verify critical tools and versions

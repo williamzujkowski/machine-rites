@@ -1,0 +1,264 @@
+# Starship Configuration for Machine-Rites
+# A modern, functional, and visually appealing prompt
+# Optimized for development workflows and system administration
+
+# Global configuration
+format = """
+$username\
+$hostname\
+$directory\
+$git_branch\
+$git_commit\
+$git_state\
+$git_status\
+$kubernetes\
+$docker_context\
+$package\
+$nodejs\
+$python\
+$rust\
+$golang\
+$terraform\
+$aws\
+$gcloud\
+$cmd_duration\
+$line_break\
+$character\
+"""
+
+# Prompt character configuration
+[character]
+success_symbol = "[➜](bold green)"
+error_symbol = "[✗](bold red)"
+vimcmd_symbol = "[✓](bold green)"
+
+# Username configuration
+[username]
+style_user = "bold cyan"
+style_root = "bold red"
+format = "[$user]($style) "
+disabled = false
+show_always = false
+
+# Hostname configuration
+[hostname]
+ssh_only = true
+format = "[@$hostname](bold yellow) "
+disabled = false
+
+# Directory configuration
+[directory]
+style = "bold blue"
+truncation_length = 3
+truncate_to_repo = true
+format = "[$path]($style)[$read_only]($read_only_style) "
+read_only = " 🔒"
+read_only_style = "red"
+
+[directory.substitutions]
+"Documents" = " "
+"Downloads" = " "
+"Music" = " "
+"Pictures" = " "
+"~" = " "
+
+# Git configuration
+[git_branch]
+symbol = " "
+style = "bold purple"
+format = "[$symbol$branch(:$remote_branch)]($style) "
+
+[git_status]
+style = "bold red"
+format = '([\[$all_status$ahead_behind\]]($style) )'
+conflicted = "⚔️ "
+ahead = "⇡${count}"
+behind = "⇣${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+untracked = "?${count}"
+stashed = "📦${count}"
+modified = "!${count}"
+staged = "+${count}"
+renamed = "»${count}"
+deleted = "✘${count}"
+
+[git_state]
+format = '[\($state( $progress_current of $progress_total)\)]($style) '
+cherry_pick = "[🍒 PICKING](bold red)"
+rebase = "[REBASING](bold orange)"
+merge = "[MERGING](bold yellow)"
+
+[git_commit]
+commit_hash_length = 7
+tag_symbol = " 🏷 "
+format = "[\\($hash$tag\\)](bold green) "
+
+# Package version
+[package]
+symbol = "📦 "
+style = "bold 208"
+format = "[$symbol$version]($style) "
+display_private = false
+
+# Language configurations
+[nodejs]
+symbol = " "
+style = "bold green"
+format = "[$symbol($version )]($style)"
+detect_extensions = ["js", "mjs", "cjs", "ts", "mts", "cts"]
+detect_files = ["package.json", ".node-version", ".nvmrc"]
+detect_folders = ["node_modules"]
+
+[python]
+symbol = " "
+style = "yellow bold"
+format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
+python_binary = ["python3", "python"]
+detect_extensions = ["py"]
+detect_files = [".python-version", "Pipfile", "pyproject.toml", "requirements.txt", "setup.py"]
+
+[rust]
+symbol = " "
+style = "bold red"
+format = "[$symbol($version )]($style)"
+detect_extensions = ["rs"]
+detect_files = ["Cargo.toml", "Cargo.lock"]
+
+[golang]
+symbol = " "
+style = "bold cyan"
+format = "[$symbol($version )]($style)"
+detect_extensions = ["go"]
+detect_files = ["go.mod", "go.sum", "glide.yaml", "Gopkg.yml", "Gopkg.lock"]
+
+[docker_context]
+symbol = " "
+style = "bold blue"
+format = "[$symbol$context]($style) "
+only_with_files = true
+detect_files = ["docker-compose.yml", "docker-compose.yaml", "Dockerfile"]
+
+[kubernetes]
+symbol = "☸ "
+style = "bold blue"
+format = '[$symbol$context( \($namespace\))]($style) '
+disabled = false
+
+[terraform]
+symbol = "💠 "
+style = "bold purple"
+format = "[$symbol$workspace]($style) "
+detect_extensions = ["tf", "tfplan", "tfstate"]
+detect_files = ["terraform.rc", ".terraformrc"]
+
+# Cloud providers
+[aws]
+symbol = "☁️  "
+style = "bold yellow"
+format = '[$symbol($profile )(\($region\) )(\[$duration\] )]($style)'
+disabled = false
+
+[gcloud]
+symbol = "☁️ "
+style = "bold blue"
+format = '[$symbol$account(@$domain)(\($region\))]($style) '
+disabled = false
+
+# Performance metrics
+[cmd_duration]
+min_time = 2_000
+format = "took [$duration](bold yellow) "
+show_milliseconds = false
+show_notifications = true
+min_time_to_notify = 45_000
+
+[memory_usage]
+symbol = " "
+style = "bold dimmed white"
+format = "$symbol[${ram_pct}]($style) "
+threshold = 75
+disabled = false
+
+[battery]
+full_symbol = "🔋"
+charging_symbol = "⚡"
+discharging_symbol = "💀"
+unknown_symbol = "❓"
+empty_symbol = "🪫"
+
+[[battery.display]]
+threshold = 30
+style = "bold red"
+
+[[battery.display]]
+threshold = 50
+style = "bold yellow"
+
+[[battery.display]]
+threshold = 80
+style = "bold green"
+
+# Time display (optional, disabled by default)
+[time]
+disabled = true
+format = '[$time]($style) '
+time_format = "%R"
+style = "bold white"
+
+# Status indicators
+[status]
+style = "bold red"
+symbol = "✖ "
+format = '[$symbol$common_meaning$signal_name$maybe_int]($style) '
+map_symbol = true
+disabled = false
+
+[sudo]
+style = "bold red"
+symbol = "🧙 "
+format = "[$symbol]($style)"
+disabled = false
+
+# Shell indicator
+[shell]
+bash_indicator = "bsh"
+fish_indicator = "fsh"
+zsh_indicator = "zsh"
+powershell_indicator = "psh"
+ion_indicator = "ion"
+elvish_indicator = "esh"
+tcsh_indicator = "tsh"
+xonsh_indicator = "xsh"
+cmd_indicator = "cmd"
+nu_indicator = "nu"
+unknown_indicator = "?"
+format = "[$indicator]($style) "
+style = "cyan bold"
+disabled = true
+
+# Jobs indicator
+[jobs]
+symbol = "+"
+style = "bold blue"
+number_threshold = 1
+format = "[$symbol$number]($style) "
+
+# Environment indicator
+[env_var.VIRTUAL_ENV]
+symbol = "🐍 "
+style = "bold yellow"
+format = "[$symbol($env_value )]($style)"
+
+[env_var.USER]
+default = "unknown"
+format = "[$env_value](bold green) "
+disabled = true
+
+# Line break
+[line_break]
+disabled = false
+
+# Fill for right-aligned modules
+[fill]
+symbol = " "
+style = "bold black"
