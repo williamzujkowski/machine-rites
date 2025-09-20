@@ -37,13 +37,13 @@ jobs:
         distro:
           - name: ubuntu-24.04
             tag: ubuntu-24.04
-            dockerfile: Dockerfile.ubuntu-24.04
+            dockerfile: docker/ubuntu-24.04/Dockerfile
           - name: ubuntu-22.04
             tag: ubuntu-22.04
-            dockerfile: Dockerfile.ubuntu-22.04
+            dockerfile: docker/ubuntu-22.04/Dockerfile
           - name: debian-12
             tag: debian-12
-            dockerfile: Dockerfile.debian-12
+            dockerfile: docker/debian-12/Dockerfile
     outputs:
       cache-hit-ubuntu-24-04: ${{ steps.cache-ubuntu-24-04.outputs.cache-hit }}
       cache-hit-ubuntu-22-04: ${{ steps.cache-ubuntu-22-04.outputs.cache-hit }}
@@ -71,7 +71,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./.github/docker/${{ matrix.distro.dockerfile }}
+          file: ./${{ matrix.distro.dockerfile }}
           platforms: linux/amd64
           push: false
           tags: machine-rites:${{ matrix.distro.tag }}
@@ -97,13 +97,13 @@ jobs:
         include:
           - distro: ubuntu-24.04
             container_tag: ubuntu-24.04
-            dockerfile: Dockerfile.ubuntu-24.04
+            dockerfile: docker/ubuntu-24.04/Dockerfile
           - distro: ubuntu-22.04
             container_tag: ubuntu-22.04
-            dockerfile: Dockerfile.ubuntu-22.04
+            dockerfile: docker/ubuntu-22.04/Dockerfile
           - distro: debian-12
             container_tag: debian-12
-            dockerfile: Dockerfile.debian-12
+            dockerfile: docker/debian-12/Dockerfile
     continue-on-error: true
 
     steps:
@@ -125,7 +125,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./.github/docker/${{ matrix.dockerfile }}
+          file: ./${{ matrix.dockerfile }}
           load: true
           tags: machine-rites:${{ matrix.container_tag }}
           cache-from: type=local,src=/tmp/.buildx-cache-${{ matrix.distro }}
