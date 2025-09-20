@@ -438,7 +438,7 @@ perform_rollback() {
     # Restore preserved items
     for item in "${preserve_items[@]}"; do
         if [[ -e "$temp_preserve/$item" ]]; then
-            rm -rf "$REPO_DIR/$item"
+            rm -rf "${REPO_DIR:?}/${item:?}"
             cp -a "$temp_preserve/$item" "$REPO_DIR/"
             if [[ $VERBOSE == true ]]; then
                 info "Restored: $item"

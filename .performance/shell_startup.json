@@ -1,7 +1,0 @@
-{
-        "test": "shell_startup",
-        "avg_time_ms": 3,
-        "target_ms": 2,
-        "passed": false,
-        "timestamp": "2025-09-19T09:53:36-04:00"
-    }
