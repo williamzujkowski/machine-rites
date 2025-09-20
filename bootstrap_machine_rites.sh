@@ -268,7 +268,7 @@ check_packages_parallel() {
 
 # Leave chezmoi to the official installer fallback below (Ubuntu 24.04 lacks package)
 packages=(curl git gnupg pass age gitleaks bash-completion pipx openssh-client)
-missing=($(check_packages_parallel "${packages[@]}"))
+mapfile -t missing < <(check_packages_parallel "${packages[@]}")
 
 if [ "${#missing[@]}" -gt 0 ]; then
   say "Installing: ${missing[*]}"
@@ -330,8 +330,12 @@ else
 fi
 
 if ! command -v pre-commit >/dev/null 2>&1; then
-  say "Installing pre-commit via pipx..."
-  pipx install pre-commit >/dev/null || true
+  if command -v pipx >/dev/null 2>&1; then
+    say "Installing pre-commit via pipx..."
+    pipx install pre-commit >/dev/null || true
+  else
+    info "pipx not found, skipping pre-commit installation (install pipx for pre-commit support)"
+  fi
 fi
 
 # Install Starship prompt (default)
@@ -1238,10 +1242,14 @@ for f in "$HOME/.bashrc" "$HOME/.profile" "$HOME/.bashrc.d/"*.sh; do
   fi
 done
 
-# Smoke test
-if ! bash -ilc 'echo "OK" && ssh-add -l >/dev/null 2>&1' >/dev/null 2>&1; then
-  warn "Interactive shell test failed"
-  ((errors++))
+# Smoke test (skip in non-interactive or test environments)
+if [[ "${TEST_MODE:-}" == "true" ]] || [[ "${CI:-}" == "true" ]] || [[ ! -t 0 ]]; then
+  info "Skipping interactive shell test in non-interactive environment"
+else
+  if ! bash -ilc 'echo "OK" && ssh-add -l >/dev/null 2>&1' >/dev/null 2>&1; then
+    warn "Interactive shell test failed"
+    ((errors++))
+  fi
 fi
 
 if [ "$errors" -gt 0 ]; then
