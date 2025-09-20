@@ -32,16 +32,58 @@ log_success() { echo -e "${GREEN}[SUCCESS]${NC} $*"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $*"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 
-# Check if multipass is available
+# Check if multipass is available with validation
 check_multipass() {
     if ! command -v multipass >/dev/null 2>&1; then
         log_error "Multipass is not installed"
         log_info "Install with: snap install multipass"
         log_info "Or visit: https://multipass.run/install"
+        log_info "Falling back to Docker if available"
         return 1
     fi
 
-    log_info "Multipass version: $(multipass version)"
+    # Validate multipass is actually working
+    if ! multipass version >/dev/null 2>&1; then
+        log_error "Multipass is installed but not responding"
+        log_info "Try: sudo snap restart multipass"
+        log_info "Or: sudo snap connect multipass:home"
+
+        # Attempt to fix common issues
+        if command -v snap >/dev/null 2>&1; then
+            log_info "Attempting to restart multipass service..."
+            sudo snap restart multipass 2>/dev/null || true
+            sleep 2
+
+            # Check again after restart
+            if multipass version >/dev/null 2>&1; then
+                log_success "Multipass service restarted successfully"
+            else
+                log_error "Multipass still not responding after restart"
+                return 1
+            fi
+        fi
+    fi
+
+    # Check if multipassd is running
+    if ! multipass list >/dev/null 2>&1; then
+        log_error "Multipass daemon not responding"
+        log_info "Checking service status..."
+
+        if systemctl is-active snap.multipass.multipassd.service >/dev/null 2>&1; then
+            log_info "Service is active but not responding"
+        else
+            log_info "Service is not active. Starting..."
+            sudo systemctl start snap.multipass.multipassd.service 2>/dev/null || true
+        fi
+
+        # Final check
+        if ! multipass list >/dev/null 2>&1; then
+            log_error "Unable to connect to multipass service"
+            return 1
+        fi
+    fi
+
+    log_success "Multipass available: $(multipass version 2>&1 | head -1)"
     return 0
 }
 
@@ -54,7 +96,7 @@ check_docker() {
     return 1
 }
 
-# Create VM with snapshot
+# Create VM with snapshot and validation
 create_vm() {
     local vm_version="$1"
     local vm_name="${VM_PREFIX}-${vm_version}"
@@ -63,28 +105,61 @@ create_vm() {
 
     log_info "Creating VM: $vm_name ($description)"
 
+    # Validate multipass is working before proceeding
+    if ! multipass list >/dev/null 2>&1; then
+        log_error "Multipass not responding, cannot create VM"
+        log_info "Falling back to Docker container creation"
+        create_docker_vm "$vm_version"
+        return $?
+    fi
+
     # Check if VM already exists
-    if multipass list | grep -q "^${vm_name}"; then
+    if multipass list 2>/dev/null | grep -q "^${vm_name}"; then
         log_warning "VM $vm_name already exists"
+
+        # Check VM state
+        local vm_state=$(multipass list 2>/dev/null | grep "^${vm_name}" | awk '{print $2}')
+        if [[ "$vm_state" == "Stopped" ]]; then
+            log_info "Starting stopped VM $vm_name"
+            multipass start "$vm_name" 2>/dev/null || log_error "Failed to start VM"
+        fi
         return 0
     fi
 
-    # Launch VM
-    if multipass launch "$image_version" \
+    # Launch VM with error handling
+    log_info "Launching VM with ${DEFAULT_CPUS} CPUs, ${DEFAULT_MEMORY} memory, ${DEFAULT_DISK} disk"
+
+    if timeout 300 multipass launch "$image_version" \
         --name "$vm_name" \
         --cpus "$DEFAULT_CPUS" \
         --memory "$DEFAULT_MEMORY" \
-        --disk "$DEFAULT_DISK"; then
+        --disk "$DEFAULT_DISK" 2>&1 | tee /tmp/multipass-launch.log; then
+
         log_success "VM $vm_name created successfully"
 
-        # Create clean snapshot
+        # Verify VM is running
+        if ! multipass list 2>/dev/null | grep "^${vm_name}" | grep -q "Running"; then
+            log_error "VM created but not running"
+            multipass start "$vm_name" 2>/dev/null || true
+        fi
+
+        # Create clean snapshot with validation
         log_info "Creating clean snapshot for $vm_name"
-        multipass snapshot "$vm_name" --name "clean"
+        if multipass snapshot "$vm_name" --name "clean" 2>/dev/null; then
+            log_success "Snapshot created successfully"
+        else
+            log_warning "Snapshot creation failed (may not be supported)"
+        fi
 
         return 0
     else
         log_error "Failed to create VM $vm_name"
-        return 1
+        log_info "Error details in /tmp/multipass-launch.log"
+
+        # Try Docker as fallback
+        log_info "Attempting Docker fallback..."
+        create_docker_vm "$vm_version"
+        return $?
     fi
 }
 

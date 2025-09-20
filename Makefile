@@ -7,6 +7,13 @@
 # Project configuration
 PROJECT_NAME := machine-rites
 PROJECT_ROOT := $(shell pwd)
+VERSION := 2.2.0
+
+# System capability detection
+MULTIPASS_AVAILABLE := $(shell command -v multipass >/dev/null 2>&1 && multipass version >/dev/null 2>&1 && echo "true" || echo "false")
+DOCKER_AVAILABLE := $(shell command -v docker >/dev/null 2>&1 && docker version >/dev/null 2>&1 && echo "true" || echo "false")
+SHELLCHECK_AVAILABLE := $(shell command -v shellcheck >/dev/null 2>&1 && echo "true" || echo "false")
+SHFMT_AVAILABLE := $(shell command -v shfmt >/dev/null 2>&1 && echo "true" || echo "false")
 
 # Docker configuration
 DOCKER_DIR := $(PROJECT_ROOT)/docker
@@ -17,6 +24,11 @@ DISTRO ?= $(DEFAULT_DISTRO)
 TEST_TYPES := unit integration bootstrap all
 TEST ?= all
 DOCKER_BUILDKIT ?= 1
+
+# Use Docker fallback if multipass not available
+ifeq ($(MULTIPASS_AVAILABLE),false)
+    USE_DOCKER_FALLBACK := true
+endif
 
 # Colors for output
 RED := \033[0;31m
@@ -103,13 +115,24 @@ VM ?= 2204
 
 .PHONY: multipass-setup
 multipass-setup: ## Setup all multipass test VMs
+ifeq ($(MULTIPASS_AVAILABLE),true)
 	$(call log_info,"Setting up multipass test VMs...")
 	@$(MULTIPASS_SCRIPT) setup
+else
+	$(call log_warn,"Multipass not available, using Docker fallback")
+	$(call log_info,"To install multipass: snap install multipass")
+	@$(MAKE) docker-build DISTRO=all
+endif
 
 .PHONY: multipass-test
 multipass-test: ## Test bootstrap on all VMs (MODE=full|minimal|test)
+ifeq ($(MULTIPASS_AVAILABLE),true)
 	$(call log_info,"Testing bootstrap on all VMs (mode: $(MODE))")
 	@$(MULTIPASS_SCRIPT) test $(MODE)
+else
+	$(call log_warn,"Multipass not available, using Docker for testing")
+	@$(MAKE) docker-test TEST=$(MODE)
+endif
 
 .PHONY: multipass-test-vm
 multipass-test-vm: ## Test specific VM (VM=2204|2404|2004, MODE=full|minimal|test)
@@ -118,8 +141,13 @@ multipass-test-vm: ## Test specific VM (VM=2204|2404|2004, MODE=full|minimal|tes
 
 .PHONY: multipass-clean
 multipass-clean: ## Clean up all test VMs
+ifeq ($(MULTIPASS_AVAILABLE),true)
 	$(call log_info,"Cleaning up test VMs...")
 	@$(MULTIPASS_SCRIPT) clean
+else
+	$(call log_info,"Using Docker fallback - cleaning Docker containers")
+	@$(MAKE) docker-clean
+endif
 
 .PHONY: multipass-report
 multipass-report: ## Generate multipass test report
@@ -437,16 +465,26 @@ clean: docker-clean ## Clean up build artifacts and temporary files
 
 .PHONY: info
 info: ## Show project information
-	@echo "Project Information"
-	@echo "==================="
+	@echo "Machine-Rites Project Information"
+	@echo "================================="
+	@echo "Version: $(VERSION)"
 	@echo "Name: $(PROJECT_NAME)"
 	@echo "Root: $(PROJECT_ROOT)"
-	@echo "Docker Dir: $(DOCKER_DIR)"
-	@echo "Compose File: $(COMPOSE_FILE)"
+	@echo "Git Branch: $$(git branch --show-current 2>/dev/null || echo 'N/A')"
+	@echo "Git Commit: $$(git rev-parse --short HEAD 2>/dev/null || echo 'N/A')"
 	@echo ""
-	@echo "Supported Distros: $(SUPPORTED_DISTROS)"
-	@echo "Default Distro: $(DEFAULT_DISTRO)"
-	@echo "Test Types: $(TEST_TYPES)"
+	@echo "System Capabilities:"
+	@echo "  Multipass: $(MULTIPASS_AVAILABLE)"
+	@echo "  Docker: $(DOCKER_AVAILABLE)"
+	@echo "  Shellcheck: $(SHELLCHECK_AVAILABLE)"
+	@echo "  Shfmt: $(SHFMT_AVAILABLE)"
+	@echo ""
+	@echo "Docker Configuration:"
+	@echo "  Dir: $(DOCKER_DIR)"
+	@echo "  Compose: $(COMPOSE_FILE)"
+	@echo "  Supported: $(SUPPORTED_DISTROS)"
+	@echo "  Default: $(DEFAULT_DISTRO)"
+	@echo "  Test Types: $(TEST_TYPES)"
 	@echo ""
 	@echo "Current Settings:"
 	@echo "  DISTRO: $(DISTRO)"
