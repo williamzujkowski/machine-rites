@@ -91,6 +91,62 @@ define check_compose
 	fi
 endef
 
+# =============================================================================
+# Multipass VM Testing Targets
+# =============================================================================
+
+# Multipass configuration
+MULTIPASS_SCRIPT := $(PROJECT_ROOT)/scripts/multipass-testing.sh
+VM_VERSIONS := 2204 2404 2004
+MODE ?= full
+VM ?= 2204
+
+.PHONY: multipass-setup
+multipass-setup: ## Setup all multipass test VMs
+	$(call log_info,"Setting up multipass test VMs...")
+	@$(MULTIPASS_SCRIPT) setup
+
+.PHONY: multipass-test
+multipass-test: ## Test bootstrap on all VMs (MODE=full|minimal|test)
+	$(call log_info,"Testing bootstrap on all VMs (mode: $(MODE))")
+	@$(MULTIPASS_SCRIPT) test $(MODE)
+
+.PHONY: multipass-test-vm
+multipass-test-vm: ## Test specific VM (VM=2204|2404|2004, MODE=full|minimal|test)
+	$(call log_info,"Testing VM $(VM) with mode $(MODE)")
+	@$(MULTIPASS_SCRIPT) deploy $(VM) $(MODE)
+
+.PHONY: multipass-clean
+multipass-clean: ## Clean up all test VMs
+	$(call log_info,"Cleaning up test VMs...")
+	@$(MULTIPASS_SCRIPT) clean
+
+.PHONY: multipass-report
+multipass-report: ## Generate multipass test report
+	$(call log_info,"Generating test report...")
+	@$(MULTIPASS_SCRIPT) report
+
+.PHONY: multipass-validate
+multipass-validate: multipass-setup multipass-test multipass-report ## Complete VM validation cycle
+	$(call log_success,"VM validation complete")
+
+.PHONY: multipass-test-parallel
+multipass-test-parallel: ## Run tests in parallel on all VMs
+	$(call log_info,"Running parallel tests on all VMs...")
+	@for vm in $(VM_VERSIONS); do \
+		($(MULTIPASS_SCRIPT) deploy $$vm full 2>&1 | sed "s/^/[$$vm] /") & \
+	done; \
+	wait
+	$(call log_success,"Parallel testing complete")
+
+.PHONY: multipass-benchmark
+multipass-benchmark: ## Benchmark bootstrap on all VMs
+	$(call log_info,"Benchmarking bootstrap performance...")
+	@for vm in $(VM_VERSIONS); do \
+		echo "Testing $$vm..." ; \
+		time $(MULTIPASS_SCRIPT) deploy $$vm minimal ; \
+	done
+
 .PHONY: help
 help: ## Show this help message
 	@echo "Machine-Rites Build System"
@@ -98,20 +154,27 @@ help: ## Show this help message
 	@echo ""
 	@echo "Usage: make [target] [DISTRO=distro] [TEST=test]"
 	@echo ""
+	@echo "Multipass VM Targets:"
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-23s %s\n", $$1, $$2}' $(MAKEFILE_LIST) | grep "multipass-"
+	@echo ""
 	@echo "Docker Targets:"
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST) | grep -E "docker-|build-|test-|validate-"
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-23s %s\n", $$1, $$2}' $(MAKEFILE_LIST) | grep -E "docker-|build-|test-|validate-"
 	@echo ""
 	@echo "Development Targets:"
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST) | grep -vE "docker-|build-|test-|validate-|help"
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-23s %s\n", $$1, $$2}' $(MAKEFILE_LIST) | grep -vE "docker-|build-|test-|validate-|help|multipass-"
 	@echo ""
 	@echo "Parameters:"
 	@echo "  DISTRO          Docker distro ($(SUPPORTED_DISTROS), all) [default: $(DEFAULT_DISTRO)]"
 	@echo "  TEST            Test type ($(TEST_TYPES)) [default: all]"
+	@echo "  MODE            VM test mode (full|minimal|test) [default: full]"
+	@echo "  VM              VM version (2204|2404|2004) [default: 2204]"
 	@echo ""
 	@echo "Examples:"
+	@echo "  make multipass-setup              # Setup all test VMs"
+	@echo "  make multipass-test MODE=minimal  # Test minimal install on all VMs"
+	@echo "  make multipass-test-vm VM=2404    # Test Ubuntu 24.04 VM"
 	@echo "  make docker-build DISTRO=ubuntu-24"
 	@echo "  make docker-test DISTRO=debian-12 TEST=bootstrap"
-	@echo "  make docker-test-all"
 
 # =============================================================================
 # Docker Targets
