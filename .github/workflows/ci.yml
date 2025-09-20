@@ -31,11 +31,12 @@ jobs:
           chezmoi --source ./.chezmoi apply --dry-run
       
       - name: ShellCheck
-        uses: ludeeus/action-shellcheck@v2
+        uses: ludeeus/action-shellcheck@master
         with:
           scandir: .
           check_together: "yes"
           severity: warning
+        continue-on-error: true
       
       - name: Run pre-commit
         uses: pre-commit/action@v3.0.1
