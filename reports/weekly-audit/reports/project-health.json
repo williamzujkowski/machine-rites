@@ -1,0 +1,24 @@
+{
+    "timestamp": "2025-09-21T02:30:15Z",
+    "project_name": "machine-rites",
+    "total_files": 0,
+    "repository_size": "43M",
+    "package_management": {
+        "has_package_json": true,
+        "outdated_dependencies": 0
+    },
+    "testing": {
+        "coverage": "unknown"
+    },
+    "ci_cd": {
+        "has_ci": true
+    },
+    "security": {
+        "has_security_policy": false
+    },
+    "documentation": {
+        "has_readme": true,
+        "has_changelog": true,
+        "has_contributing": false
+    }
+}

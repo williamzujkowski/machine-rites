@@ -170,22 +170,27 @@ tools/check-vestigial.sh
 
 ## SPARC Commands
 
-### Core Commands
-- `npx claude-flow sparc modes` - List available modes
-- `npx claude-flow sparc run <mode> "<task>"` - Execute specific mode
-- `npx claude-flow sparc tdd "<feature>"` - Run complete TDD workflow
-- `npx claude-flow sparc info <mode>` - Get mode details
-
-### Batchtools Commands
-- `npx claude-flow sparc batch <modes> "<task>"` - Parallel execution
-- `npx claude-flow sparc pipeline "<task>"` - Full pipeline processing
-- `npx claude-flow sparc concurrent <mode> "<tasks-file>"` - Multi-task processing
-
 ### Build Commands
-- `npm run build` - Build project
-- `npm run test` - Run tests
-- `npm run lint` - Linting
-- `npm run typecheck` - Type checking
+- `npm run test` - Run test
+- `npm run testunit` - Run testunit
+- `npm run testintegration` - Run testintegration
+- `npm run teste2e` - Run teste2e
+- `npm run testlib` - Run testlib
+- `npm run testperformance` - Run testperformance
+- `npm run testcoverage` - Run testcoverage
+- `npm run benchmark` - Run benchmark
+- `npm run optimize` - Run optimize
+- `npm run optimizebootstrap` - Run optimizebootstrap
+- `npm run optimizedocker` - Run optimizedocker
+- `npm run monitor` - Run monitor
+- `npm run monitorperformance` - Run monitorperformance
+- `npm run monitorhealth` - Run monitorhealth
+- `npm run audit` - Run audit
+- `npm run auditsecurity` - Run auditsecurity
+- `npm run auditweekly` - Run auditweekly
+- `npm run verify` - Run verify
+- `npm run verifydocs` - Run verifydocs
+- `npm run verifyvestigial` - Run verifyvestigial
 
 ## SPARC Workflow Phases
 
@@ -276,30 +281,9 @@ The project evolved from an agent-focused approach to a **production-grade infra
 
 ## 🚀 Quick Setup
 
-### ⚠️ SYSTEM REQUIREMENTS
-
-**CRITICAL**: This project requires **Node.js 20** or higher for all MCP tools and development features.
-
 ```bash
-# Verify Node.js version (REQUIRED: Node.js 20+)
-node --version  # Must show v20.x.x or higher
-
-# If Node.js 20+ not installed:
-# Ubuntu/Debian:
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Verify installation
-node --version && npm --version
-```
-
-### MCP Server Setup (Optional)
-
-```bash
-# Add MCP servers (Claude Flow required for advanced features)
+# Add MCP servers (Claude Flow required, others optional)
 claude mcp add claude-flow npx claude-flow@alpha mcp start
-claude mcp add ruv-swarm npx ruv-swarm mcp start  # Optional: Enhanced coordination
-claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Optional: Cloud features
 ```
 
 ## MCP Tool Categories

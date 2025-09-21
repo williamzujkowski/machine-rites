@@ -1,0 +1,12 @@
+{
+    "generated_on": "Sun Sep 21 02:30:11 UTC 2025",
+    "project": "machine-rites",
+    "summary": {
+        "unused_files": 0,
+        "unused_functions": 0,
+        "dead_imports": 0
+    },
+    "unused_files": [],
+    "unused_functions": [],
+    "dead_imports": []
+}
