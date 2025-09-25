@@ -132,6 +132,8 @@ if [[ -n "${__LIB_COMMON_LOADED:-}" ]]; then
 fi
 
 # Library metadata
+# shellcheck disable=SC2034  # Library version for compatibility checking
 readonly LIB_COMMON_VERSION="1.0.0"
+# shellcheck disable=SC2034  # Library guard to prevent multiple sourcing
 readonly LIB_COMMON_LOADED=1
 readonly __LIB_COMMON_LOADED=1

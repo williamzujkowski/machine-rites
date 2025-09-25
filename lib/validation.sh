@@ -291,6 +291,8 @@ validate_numeric() {
 }
 
 # Library metadata
+# shellcheck disable=SC2034  # Library version for compatibility checking
 readonly LIB_VALIDATION_VERSION="1.0.0"
+# shellcheck disable=SC2034  # Library guard to prevent multiple sourcing
 readonly LIB_VALIDATION_LOADED=1
 readonly __LIB_VALIDATION_LOADED=1

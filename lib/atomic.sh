@@ -305,6 +305,8 @@ cleanup_temp_files() {
 }
 
 # Library metadata
+# shellcheck disable=SC2034  # Library version for compatibility checking
 readonly LIB_ATOMIC_VERSION="1.0.0"
+# shellcheck disable=SC2034  # Library guard to prevent multiple sourcing
 readonly LIB_ATOMIC_LOADED=1
 readonly __LIB_ATOMIC_LOADED=1
