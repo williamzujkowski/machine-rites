@@ -439,6 +439,8 @@ install_package() {
 }
 
 # Library metadata
+# shellcheck disable=SC2034  # Library version for compatibility checking
 readonly LIB_PLATFORM_VERSION="1.0.0"
+# shellcheck disable=SC2034  # Library guard to prevent multiple sourcing
 readonly LIB_PLATFORM_LOADED=1
 readonly __LIB_PLATFORM_LOADED=1
