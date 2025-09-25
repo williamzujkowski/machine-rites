@@ -142,6 +142,7 @@ test_lib_common() {
     assert_contains "$output" "[!]" "warn() uses warning prefix"
 
     # Test debug_var function
+    # shellcheck disable=SC2034  # Variable is used in debug_var call
     local TEST_VAR="test_value"
     output="$(debug_var "TEST_VAR" 2>&1)"
     assert_contains "$output" "TEST_VAR=test_value" "debug_var() shows variable name and value"
