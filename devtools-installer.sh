@@ -16,6 +16,7 @@ fail(){ printf "${C_R}✗${C_N} %s\n" "$*"; }
 UNATTENDED=0
 VERBOSE=0
 MINIMAL=0
+# shellcheck disable=SC2034  # Variables reserved for future functionality
 SKIP_DOCKER=0
 SKIP_RUST=0
 SKIP_GO=0
@@ -25,6 +26,7 @@ VERIFY_ONLY=0
 FIX_ISSUES=0
 USE_LTS_ONLY=1  # Default to LTS versions
 
+# shellcheck disable=SC2034  # SKIP_* and FIX_ISSUES variables reserved for future functionality
 for arg in "$@"; do
   case "$arg" in
     --unattended|-u) UNATTENDED=1 ;;
@@ -100,7 +102,7 @@ if [ "$VERIFY_ONLY" -eq 1 ]; then
         export NVM_DIR="$HOME/.local/share/nvm"
         set +u
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-        set -u
+        # Don't re-enable set -u to avoid unbound variable errors
         if command -v nvm >/dev/null 2>&1; then
             ok "nvm: $(nvm --version)"
             nvm list | grep -q "v20\|v22" && ok "Node.js LTS installed" || fail "No LTS Node.js"
@@ -222,7 +224,7 @@ if [ "$SKIP_NODE" -eq 0 ]; then
       set +u
       \. "$NVM_DIR/nvm.sh"
       \. "$NVM_DIR/bash_completion" 2>/dev/null || true
-      set -u
+      # Don't re-enable set -u to avoid unbound variable errors
     fi
     
     # Install appropriate Node.js version
@@ -255,7 +257,7 @@ if [ "$SKIP_NODE" -eq 0 ]; then
     if [ -s "$NVM_DIR/nvm.sh" ]; then
       set +u
       \. "$NVM_DIR/nvm.sh"
-      set -u
+      # Don't re-enable set -u to avoid unbound variable errors
       # Ensure we're using LTS
       if [ "$USE_LTS_ONLY" -eq 1 ]; then
         nvm use 20 2>/dev/null || nvm install 20
@@ -279,7 +281,7 @@ if [ -s "$NVM_DIR/nvm.sh" ]; then
   set +u
   \. "$NVM_DIR/nvm.sh"
   \. "$NVM_DIR/bash_completion" 2>/dev/null || true
-  set -u
+  # Don't re-enable set -u to avoid unbound variable errors
 fi
 EOF
     ok "Created $HOME/.bashrc.d/20-nvm.sh"
@@ -401,7 +403,7 @@ export NVM_DIR="${NVM_DIR:-$HOME/.local/share/nvm}"
 [ -s "$NVM_DIR/nvm.sh" ] && {
     set +u
     \. "$NVM_DIR/nvm.sh"
-    set -u
+    # Don't re-enable set -u to avoid unbound variable errors
 }
 
 # Ensure pyenv is loaded
