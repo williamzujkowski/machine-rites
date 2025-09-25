@@ -87,9 +87,9 @@ discover_scripts() {
         basename_script=$(basename "$script")
 
         # Apply include pattern
-        if [[ "$basename_script" == $INCLUDE_PATTERN ]]; then
+        if [[ "$basename_script" == "$INCLUDE_PATTERN" ]]; then
             # Apply exclude pattern
-            if [[ -z "$EXCLUDE_PATTERN" ]] || [[ "$basename_script" != $EXCLUDE_PATTERN ]]; then
+            if [[ -z "$EXCLUDE_PATTERN" ]] || [[ "$basename_script" != "$EXCLUDE_PATTERN" ]]; then
                 scripts+=("$script")
             fi
         fi
