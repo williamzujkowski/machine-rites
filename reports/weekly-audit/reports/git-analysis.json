@@ -1,8 +1,8 @@
 {
     "period": "last_7_days",
-    "start_date": "2026-03-15",
-    "end_date": "2026-03-22",
-    "commits": 2,
+    "start_date": "2026-03-22",
+    "end_date": "2026-03-29",
+    "commits": 3,
     "changed_files": 0
 0,
     "contributors": 2,
