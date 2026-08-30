@@ -1,8 +1,8 @@
 # Weekly Audit Report
 
-**Generated:** Sun Aug 23 02:53:06 UTC 2026
+**Generated:** Sun Aug 30 07:37:50 UTC 2026
 **Project:** machine-rites
-**Period:** 2026-08-16 to 2026-08-23
+**Period:** 2026-08-23 to 2026-08-30
 
 ## Executive Summary
 
