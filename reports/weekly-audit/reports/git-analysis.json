@@ -1,11 +1,11 @@
 {
     "period": "last_7_days",
-    "start_date": "2026-11-08",
-    "end_date": "2026-11-15",
-    "commits": 1,
+    "start_date": "2026-11-15",
+    "end_date": "2026-11-22",
+    "commits": 0,
     "changed_files": 0
 0,
-    "contributors": 1,
+    "contributors": 0,
     "file_changes": {
         "javascript": 0
 0,
